@@ -1,3 +1,8 @@
+# BEAMtime 1.3.12
+
+- Display screens come back when Chromium crashes at start ("Zygote process exited prematurely"): after 3 quick crashes the Pi starts it without the sandbox (safe for our own local page).
+- More checks in /api/diag (folder owners, shared memory, Chromium version).
+
 # BEAMtime 1.3.11
 
 - Fixes Pis sometimes not restarting after an update or a Restart from Settings (the restart was cancelled when the update finished).

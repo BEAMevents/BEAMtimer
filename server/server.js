@@ -166,6 +166,20 @@ function onConn(conn, req) {
 
 const kiosk = { beatAt: 0, onlineAt: 0 };
 
+// Things that stop Chromium starting (for /api/diag): folder owners, shared memory, sandbox.
+function diagChecks(home) {
+  const sh = cmd => new Promise(resolve => execFile('/bin/sh', ['-c', cmd], { timeout: 5000 }, (err, out, errOut) => resolve(String(out || '') + String(errOut || ''))));
+  if (process.platform !== 'linux') return Promise.resolve(null);
+  return sh(`
+    echo "== owners"; stat -c '%U:%G %a %n' "${home}" "${home}/.config" "${home}/.config/beamtimer-chromium" "${home}/.cache" "${home}/.pki" "${home}/.local" "${home}/.local/share" 2>&1
+    echo "== root-owned files in the browser folders"; find "${home}/.config" "${home}/.cache" "${home}/.pki" "${home}/.local" -maxdepth 3 ! -user "$(id -un)" 2>/dev/null | head -10
+    echo "== shared memory"; df -h /dev/shm 2>&1 | tail -1; ls -ld /dev/shm
+    echo "== chromium"; (chromium --version || chromium-browser --version) 2>&1 | head -2
+    echo "== sandbox"; ls -l /usr/lib/chromium/chrome-sandbox 2>&1; cat /proc/sys/kernel/unprivileged_userns_clone /proc/sys/user/max_user_namespaces 2>&1
+    echo "== disk"; df -h / 2>&1 | tail -1
+    echo "== memory"; free -m 2>&1 | head -2`);
+}
+
 // ---------- finding the controller (display only) ----------
 let found = { url: null, at: 0 };
 
@@ -328,6 +342,8 @@ const server = http.createServer(async (req, res) => {
       controller: cfg.role === 'display' ? (found.url || null) : undefined,
       updateStatus, updateLog: tail(path.join(cfg.dataDir, 'update.log')),
       browserLog: tail(path.join(home, '.cache', 'beamtime-kiosk.log')), browserLogLast: tail(path.join(home, '.cache', 'beamtime-kiosk.log.last')),
+      browserSafeMode: fs.existsSync(path.join(home, '.cache', 'beamtime-kiosk-safe')),
+      checks: await diagChecks(home),
     });
   }
   // Restart this display Pi. Only its own controller may ask (Settings → Displays → Restart).

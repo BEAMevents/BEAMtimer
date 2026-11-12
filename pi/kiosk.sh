@@ -15,6 +15,7 @@ BROWSER=$(command -v chromium || command -v chromium-browser)
 PROFILE="$HOME/.config/beamtimer-chromium"
 mkdir -p "$PROFILE" "$HOME/.cache"
 LOG="$HOME/.cache/beamtime-kiosk.log"   # the browser's own messages, shown in /api/diag
+rm -f "$HOME/.cache/beamtime-kiosk-safe"
 
 # Wait for the local server (up to 60 s) so the page doesn't open on an error.
 for _ in $(seq 60); do
@@ -22,7 +23,16 @@ for _ in $(seq 60); do
   sleep 1
 done
 
+QUICK=0      # browser crashes in a row, each within a few seconds of starting
+SAFE=0       # after 3: start without the sandbox and zygote helper (fine for our own local page)
+SAFE_FLAGS=()
 while true; do
+  if [ "$SAFE" = 0 ] && [ "$QUICK" -ge 3 ]; then
+    SAFE=1
+    SAFE_FLAGS=(--no-sandbox --no-zygote --test-type)
+    echo "BEAMtime kiosk: browser keeps crashing at start; starting it without the sandbox" | systemd-cat -t beamtime-kiosk 2>/dev/null || true
+    touch "$HOME/.cache/beamtime-kiosk-safe"
+  fi
   # A restart or power cut can leave Chromium's "already running" lock behind; Chromium then
   # quits at once and the screen stays black. Nothing else uses this profile, so clear it.
   rm -f "$PROFILE"/SingletonLock "$PROFILE"/SingletonSocket "$PROFILE"/SingletonCookie
@@ -34,7 +44,7 @@ while true; do
     --disable-session-crashed-bubble --disable-features=Translate,TranslateUI \
     --overscroll-history-navigation=0 --disable-pinch --check-for-update-interval=31536000 \
     --password-store=basic --user-data-dir="$PROFILE" \
-    --ozone-platform=wayland --enable-features=OverlayScrollbar \
+    --ozone-platform=wayland --enable-features=OverlayScrollbar "${SAFE_FLAGS[@]}" \
     >"$LOG" 2>&1 &
   PID=$!
   START=$(date +%s)
@@ -49,7 +59,9 @@ while true; do
     fi
   done
   wait "$PID" 2>/dev/null
-  echo "== browser exited with code $? at $(date)" >> "$LOG"
+  CODE=$?
+  if [ $(( $(date +%s) - START )) -lt 15 ]; then QUICK=$((QUICK + 1)); else QUICK=0; fi
+  echo "== browser exited with code $CODE at $(date) (quick crashes in a row: $QUICK, safe mode: $SAFE)" >> "$LOG"
   cp -f "$LOG" "$LOG.last" 2>/dev/null
   sleep 2
 done
