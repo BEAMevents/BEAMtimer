@@ -1,5 +1,5 @@
 #!/bin/bash
-# Opens the BEAMtimer page full screen in Chromium and reopens it if it ever closes.
+# Opens the BEAMtime page full screen in Chromium and reopens it if it ever closes.
 # Started at boot by cage (Pi OS Lite) or by labwc's autostart (Pi OS Desktop).
 # No browser zoom: the pages scale themselves to the screen (public/fit.js, container units).
 CONFIG=/etc/beamtimer/config.json

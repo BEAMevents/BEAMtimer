@@ -1,5 +1,5 @@
 #!/bin/bash
-# Installs a BEAMtimer update. Run as root by beamtimer-update.service when the BEAMtimer
+# Installs a BEAMtime update. Run as root by beamtimer-update.service when the BEAMtime
 # server (which can't install as itself) leaves /var/lib/beamtimer/update-request:
 #   {"file": "/var/lib/beamtimer/updates/beamtimer-1.2.0.tar.gz", "sha256": "…", "version": "1.2.0"}
 # The server has already checked the file against the release checksum; it is checked again here.
@@ -29,10 +29,10 @@ status installing
 [ "$(sha256sum "$FILE" | cut -d' ' -f1)" = "$SHA" ] || fail "The update file is damaged (checksum does not match)."
 TMP="$(mktemp -d)"
 tar -xzf "$FILE" -C "$TMP" --no-same-owner >> "$LOG" 2>&1 || fail "The update file could not be unpacked."
-[ -f "$TMP/pi/install.sh" ] && [ -f "$TMP/server/server.js" ] || fail "The update file is not a BEAMtimer update."
+[ -f "$TMP/pi/install.sh" ] && [ -f "$TMP/server/server.js" ] || fail "The update file is not a BEAMtime update."
 grep -q "\"version\": *\"$VERSION\"" "$TMP/package.json" || fail "The update file has the wrong version in it."
 
-# The new installer does the rest, with this Pi's saved settings, then restarts BEAMtimer.
+# The new installer does the rest, with this Pi's saved settings, then restarts BEAMtime.
 if bash "$TMP/pi/install.sh" --update >> "$LOG" 2>&1; then
   status done
   echo "== done" >> "$LOG"

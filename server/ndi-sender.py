@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""BEAMtimer NDI output: sends the timer as an NDI video source (for vMix, OBS, TriCaster…).
+"""BEAMtime NDI output: sends the timer as an NDI video source (for vMix, OBS, TriCaster…).
 
 It reads the timer from the controller (GET /api/state, 4 times a second) and draws
 the clock as LED-style 7-segment digits with the progress bar, in the colours picked
-in Settings. Presenter messages are left out on purpose: this is the clean clock.
+in Settings, the signal lights across the top (green, amber, red, as on the control
+panel), and the presenter message under the clock (like the display page).
 
-Only the Python standard library is used. NDI itself comes from the NDI SDK's
-libndi (pi/install.sh --ndi installs it), loaded with ctypes.
+The clock uses only the Python standard library. Messages are drawn with Pillow
+(python3-pil) and the DejaVu font; without them the clock still works, with no message.
+NDI itself comes from the NDI SDK's libndi (pi/install.sh --ndi installs it), loaded with ctypes.
 
   python3 server/ndi-sender.py                 # settings from /etc/beamtimer/config.json ("ndi": {...})
   python3 server/ndi-sender.py --name "Stage" --size 1280x720 --fps 30 --alpha
@@ -231,6 +233,82 @@ class Canvas:
 
 
 GREEN = (0x34, 0xc7, 0x59)
+# Signal lights, as on the control panel: (lit, unlit)
+LAMPS = [((0x22, 0xd1, 0x4b), (0x0b, 0x2a, 0x10)), ((0xff, 0xc2, 0x1a), (0x33, 0x28, 0x0b)), ((0xff, 0x2a, 0x18), (0x33, 0x0b, 0x0b))]
+
+# ---------------------------------------------------------------- message text (Pillow, optional)
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    Image = None
+
+FONTS = ['/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+         '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+         '/System/Library/Fonts/Supplemental/Arial Bold.ttf']
+_fonts = {}
+
+
+def font(size):
+    if size not in _fonts:
+        f = None
+        for path in FONTS:
+            if os.path.exists(path):
+                f = ImageFont.truetype(path, size)
+                break
+        _fonts[size] = f or ImageFont.load_default(size)
+    return _fonts[size]
+
+
+def wrap(text, f, width):
+    """Lines that fit width (words, and long words broken anywhere, like the page)."""
+    lines = []
+    for para in text.split('\n'):
+        line = ''
+        for word in para.split(' '):
+            cand = (line + ' ' + word) if line else word
+            if f.getlength(cand) <= width:
+                line = cand
+                continue
+            if line:
+                lines.append(line)
+            line = ''
+            while f.getlength(word) > width and len(word) > 1:
+                k = len(word)
+                while k > 1 and f.getlength(word[:k]) > width:
+                    k -= 1
+                lines.append(word[:k])
+                word = word[k:]
+            line = word
+        lines.append(line)
+    return lines
+
+
+def message_mask(text, w, h, max_size):
+    """Greyscale image (w x h) with the text as big as fits, centred; None without Pillow."""
+    if Image is None or w < 8 or h < 8:
+        return None
+    lo, hi, best = 4, max(5, int(max_size)), None
+    while lo <= hi:  # biggest size whose wrapped lines fit
+        mid = (lo + hi) // 2
+        f = font(mid)
+        lines = wrap(text, f, w)
+        if len(lines) * mid * 1.12 <= h and all(f.getlength(l) <= w for l in lines):
+            best, lo = (mid, lines), mid + 1
+        else:
+            hi = mid - 1
+    if not best:
+        best = (4, wrap(text, font(4), w))
+    size, lines = best
+    f = font(size)
+    lh = size * 1.12
+    img = Image.new('L', (w, h), 0)
+    d = ImageDraw.Draw(img)
+    y = (h - lh * len(lines)) / 2
+    for l in lines:
+        d.text(((w - f.getlength(l)) / 2, y + lh / 2), l, font=f, fill=255, anchor='lm')
+        y += lh
+    return img
 
 
 class Renderer:
@@ -239,18 +317,33 @@ class Renderer:
         self.w, self.h = w, h
         # Bar along the bottom, digits fill the space above it (like the display page).
         self.bar = (0.03 * w, h - 0.035 * h - 0.018 * h, w - 0.03 * w, h - 0.035 * h)
-        self.digits_box = (0.04 * w, 0.06 * h, 0.96 * w, self.bar[1] - 0.04 * h)
+        # Signal lights in a row across the top, digits below them.
+        self.lamp = 0.075 * h
+        self.lamp_y = 0.035 * h
+        self.top = int(math.ceil(self.lamp_y + self.lamp + 0.02 * h))  # rows above this belong to the lights
+        self.digits_box = (0.04 * w, self.top + 0.02 * h, 0.96 * w, self.bar[1] - 0.04 * h)
+        self.last_lamps = None
         self.last_digits = None
         self.last_bar = None
+        self.last_msg = None
+        self.mask = (None, None)  # (key, greyscale message image)
 
     def frame(self, s, now, online):
         """Draw the frame for state s (None = waiting). Only redraws what changed; True if anything did."""
+        msg, lamps = None, None
         if s is None:
             digits = ('--:--', (0x3a, 0x3a, 0x3a), 1.0, False)
             bar = None
         elif s.get('blackout'):
             digits, bar = None, None
         else:
+            m = s.get('message') or {}
+            if Image is not None and (m.get('text') or '').strip():
+                # flashing messages blink in the warning colour (0.8 s, like the page)
+                if m.get('flash'):
+                    msg = (m['text'], hex_rgb(s.get('colorWarn'), (255, 176, 0)), 0.2 if (now % 800) >= 400 else 1.0)
+                else:
+                    msg = (m['text'], (255, 255, 255), 1.0)
             text, phase, progress, over = view(s, now)
             col = {'warn': hex_rgb(s.get('colorWarn'), (255, 176, 0)),
                    'danger': hex_rgb(s.get('colorDanger'), (255, 59, 48)),
@@ -259,6 +352,9 @@ class Renderer:
             if over and s.get('flashOvertime', True) and s.get('overtime') != 'stop' and (now % 1000) >= 500:
                 dim = 0.2
             digits = (text, col, dim, True)
+            red_dim = 0.2 if over and s.get('flashOvertime', True) and s.get('overtime') != 'stop' and (now % 1000) >= 500 else 1.0
+            lamps = (s.get('mode') != 'clock' and phase == 'normal', phase == 'warn',
+                     red_dim if phase in ('danger', 'over') else 0)
             bar = None
             if s.get('showProgress', True) and progress is not None:
                 p = max(0.0, min(1.0, progress))
@@ -266,17 +362,66 @@ class Renderer:
                 bx0, _, bx1, _ = self.bar
                 bar = (int(round((bx1 - bx0) * (1 - p))), bcol)
         changed = False
-        if digits != self.last_digits:
-            self.draw_digits(digits)
-            self.last_digits, changed = digits, True
+        if digits != self.last_digits or msg != self.last_msg:
+            self.draw_digits(digits, msg is not None)
+            if msg:
+                self.draw_msg(msg)
+            self.last_digits, self.last_msg, changed = digits, msg, True
+        if lamps != self.last_lamps:
+            self.draw_lamps(lamps)
+            self.last_lamps, changed = lamps, True
         if bar != self.last_bar:
             self.draw_bar(bar)
             self.last_bar, changed = bar, True
         return changed
 
-    def draw_digits(self, d):
+    def draw_lamps(self, lamps):
+        self.c.clear_rows(0, self.top)
+        if lamps is None:
+            return
+        size, gap = self.lamp, self.lamp * 0.85
+        x = self.w / 2 - (3 * size + 2 * gap) / 2
+        y = self.lamp_y
+        for (lit, unlit), on in zip(LAMPS, lamps):
+            if on:
+                a = 1.0 if on is True else on
+                glow = size * 0.12
+                self.c.rect(x - glow, y - glow, x + size + glow, y + size + glow, lit, 0.25 * a)
+                self.c.rect(x, y, x + size, y + size, lit, a)
+            else:
+                self.c.rect(x, y, x + size, y + size, unlit, 1.0)
+            x += size + gap
+
+    def msg_box(self):
         x0, y0, x1, y1 = self.digits_box
-        self.c.clear_rows(0, int(math.ceil(self.bar[1])) - 1)
+        return x0, y0 + 0.46 * (y1 - y0) + 0.02 * self.h, x1, y1
+
+    def draw_msg(self, msg):
+        text, col, dim = msg
+        x0, y0, x1, y1 = (int(round(v)) for v in self.msg_box())
+        w, h = x1 - x0, y1 - y0
+        key = (text, w, h)
+        if self.mask[0] != key:
+            self.mask = (key, message_mask(text, w, h, self.h / 3))
+        mask = self.mask[1]
+        if mask is None:
+            return
+        a = mask.point(lambda v: int(v * dim))
+        img = Image.new('RGBA', (w, h), col + (0,))
+        img.putalpha(a)
+        if not self.c.alpha:
+            img = Image.alpha_composite(Image.new('RGBA', (w, h), (0, 0, 0, 255)), img)
+        data = img.tobytes('raw', 'BGRA')
+        buf, W = self.c.buf, self.c.w
+        for row in range(h):
+            o = ((y0 + row) * W + x0) * 4
+            buf[o:o + w * 4] = data[row * w * 4:(row + 1) * w * 4]
+
+    def draw_digits(self, d, with_msg=False):
+        x0, y0, x1, y1 = self.digits_box
+        if with_msg:
+            y1 = y0 + 0.46 * (y1 - y0)
+        self.c.clear_rows(self.top, int(math.ceil(self.bar[1])) - 1)
         if d is None:
             return
         text, col, dim, unlit = d
@@ -452,12 +597,12 @@ def main():
     except (OSError, ValueError):
         pass
     ndi = cfg.get('ndi') or {}
-    ap = argparse.ArgumentParser(description='Send the BEAMtimer clock as an NDI source.')
-    ap.add_argument('--name', default=ndi.get('name') or 'BEAMtimer', help='NDI source name')
+    ap = argparse.ArgumentParser(description='Send the BEAMtime clock as an NDI source.')
+    ap.add_argument('--name', default=ndi.get('name') or 'BEAMtime', help='NDI source name')
     ap.add_argument('--size', default=ndi.get('size') or '1920x1080', help='e.g. 1920x1080 or 1280x720')
     ap.add_argument('--fps', type=float, default=ndi.get('fps') or 30)
     ap.add_argument('--alpha', action='store_true', default=bool(ndi.get('alpha')), help='transparent background, for keying')
-    ap.add_argument('--server', default='http://127.0.0.1:%s' % cfg.get('port', 80), help='this Pi\'s BEAMtimer server')
+    ap.add_argument('--server', default='http://127.0.0.1:%s' % cfg.get('port', 80), help='this Pi\'s BEAMtime server')
     ap.add_argument('--png', help='draw one frame to this PNG file and stop (no NDI needed)')
     ap.add_argument('--state', help='with --png: draw this state JSON file instead of asking the server')
     ap.add_argument('--at', type=float, default=0, help='with --png and --state: ms after startedAt to draw')
@@ -498,7 +643,7 @@ def main():
     link.start()
     painter = Painter(r, link, a.fps)
     painter.start()
-    print('BEAMtimer NDI: sending "%s" at %dx%d, %g fps%s' % (a.name, w, h, a.fps, ', transparent' if a.alpha else ''), flush=True)
+    print('BEAMtime NDI: sending "%s" at %dx%d, %g fps%s' % (a.name, w, h, a.fps, ', transparent' if a.alpha else ''), flush=True)
     try:
         while True:
             sender.send(painter.out)  # NDI waits here until the next frame is due

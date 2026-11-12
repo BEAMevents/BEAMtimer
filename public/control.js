@@ -1,4 +1,4 @@
-// BEAMtimer control page: three screens for a touchscreen.
+// BEAMtime control page: three screens for a touchscreen.
 //   main      big arrows, start/pause, presets, message button
 //   keyboard  message to the presenter (also used to type titles, presets, quick messages)
 //   settings  everything else
@@ -586,10 +586,10 @@
     const msg = {
       idle: '',
       checking: 'Checking…',
-      current: 'BEAMtimer is up to date.',
+      current: 'BEAMtime is up to date.',
       available: `Version ${upd.latest} is available.`,
       downloading: `Downloading version ${upd.latest}…`,
-      installing: `Installing version ${upd.latest}. BEAMtimer restarts in about 30 seconds, then this page reloads.`,
+      installing: `Installing version ${upd.latest}. BEAMtime restarts in about 30 seconds, then this page reloads.`,
       updated: `Updated to version ${upd.current}. Display Pis follow within a minute or two.`,
       error: upd.error,
       failed: upd.error,

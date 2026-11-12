@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// BEAMtimer server. One program, two roles:
+// BEAMtime server. One program, two roles:
 //   controller: holds the timer, serves the control page, and is the WebSocket hub
 //   display:    serves the display page locally and tells it where the controller is
 // Usage: node server/server.js [--role controller|display] [--port 8080]
@@ -155,7 +155,7 @@ function avahiBrowse() {
       if (err || !out) return resolve(null);
       for (const line of out.split('\n')) {
         const f = line.split(';');
-        // =;eth0;IPv4;BEAMtimer on host;_beamtimer._tcp;local;host.local;192.168.1.20;80;"role=controller"
+        // =;eth0;IPv4;BEAMtime on host;_beamtimer._tcp;local;host.local;192.168.1.20;80;"role=controller"
         if (f[0] === '=' && f[2] === 'IPv4' && f[7]) return resolve(`http://${f[7]}:${f[8]}`);
       }
       resolve(null);
@@ -268,7 +268,7 @@ if (cfg.role === 'controller') ws.attach(server, '/ws', onConn);
 
 server.on('error', e => { console.error(`Server error: ${e.message}`); process.exit(1); });
 server.listen(cfg.port, () => {
-  console.log(`BEAMtimer ${VERSION} ${cfg.role} "${NAME}" on port ${cfg.port}`);
+  console.log(`BEAMtime ${VERSION} ${cfg.role} "${NAME}" on port ${cfg.port}`);
   for (const ip of localIPs()) console.log(`  http://${ip.address}${cfg.port === 80 ? '' : ':' + cfg.port}/  (${ip.ifname})`);
   if (cfg.role === 'display') console.log(`  controller: ${cfg.controller || 'auto'}`);
 });

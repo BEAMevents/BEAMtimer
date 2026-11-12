@@ -1,4 +1,4 @@
-# BEAMtimer
+# BEAMtime
 
 Stage timer for Raspberry Pi 5. One Pi is the **controller**; any number of **display** Pis show the clock full screen on HDMI for presenters. Control it from the controller Pi's own screen (touchscreen, or HDMI + mouse) or from any phone or laptop browser on the same network.
 
@@ -46,8 +46,8 @@ You need: Pi 5s, SD cards, an HDMI screen for each display (micro-HDMI port **HD
 ### 1. Write the cards
 
 Use **BEAMpi → Write card** (or Raspberry Pi Imager) with **Raspberry Pi OS (64-bit)**. Either works:
-- **Lite** (recommended for displays): boots faster, nothing else on screen. BEAMtimer uses the small `cage` kiosk.
-- **Desktop**: also fine (and handy on the controller if you want a desktop later). BEAMtimer starts full screen with no desktop around it.
+- **Lite** (recommended for displays): boots faster, nothing else on screen. BEAMtime uses the small `cage` kiosk.
+- **Desktop**: also fine (and handy on the controller if you want a desktop later). BEAMtime starts full screen with no desktop around it.
 
 In the Pi settings:
 - **Name:** `beamtimer-control` for the controller, `beamtimer-display-1`, `beamtimer-display-2`… for displays. (In BEAMpi the number goes up by one for each card.)
@@ -56,7 +56,7 @@ In the Pi settings:
 
 Boot each Pi once and wait for it to show up (BEAMpi's Pi list, or `ping beamtimer-control.local`).
 
-### 2. Install BEAMtimer from the Mac
+### 2. Install BEAMtime from the Mac
 
 From this folder:
 
@@ -115,11 +115,11 @@ Remove: `sudo bash /opt/beamtimer/pi/uninstall.sh`.
 
 **Settings → Updates → Check for updates** on the control page (Pi screen, phone or laptop):
 1. The controller asks GitHub for the newest release of `BEAMevents/BEAMtimer` (the controller needs internet for this).
-2. If there is a newer version, it shows what's new and an **Install update** button (tap twice: it restarts BEAMtimer).
-3. The controller downloads `beamtimer-X.Y.Z.tar.gz`, checks it against the release's checksum, and installs it with this Pi's settings. BEAMtimer and the full-screen browser restart (about 30 seconds) and the page reloads by itself.
+2. If there is a newer version, it shows what's new and an **Install update** button (tap twice: it restarts BEAMtime).
+3. The controller downloads `beamtimer-X.Y.Z.tar.gz`, checks it against the release's checksum, and installs it with this Pi's settings. BEAMtime and the full-screen browser restart (about 30 seconds) and the page reloads by itself.
 4. **Display Pis follow by themselves** within a minute or two: they see the controller runs a newer version and copy the same file from it, so displays don't need internet. Settings → Displays shows each display's version.
 
-How it installs: the BEAMtimer server isn't root, so it leaves a request in `/var/lib/beamtimer`; the root service `beamtimer-update` (`pi/update.sh`) checks the file again and re-runs the installer with `--update`. Log: `/var/lib/beamtimer/update.log`.
+How it installs: the BEAMtime server isn't root, so it leaves a request in `/var/lib/beamtimer`; the root service `beamtimer-update` (`pi/update.sh`) checks the file again and re-runs the installer with `--update`. Log: `/var/lib/beamtimer/update.log`.
 
 `scripts/push.sh` still works for updating a Pi from the Mac (e.g. with no internet at all).
 
@@ -133,7 +133,7 @@ It makes `dist/beamtimer-X.Y.Z.tar.gz` and its `.sha256` and publishes them as G
 
 ### NDI output
 
-Any BEAMtimer Pi, controller or display, can also send the clock over the network as an **NDI** source. vMix, OBS (with the DistroAV plugin), TriCaster, NDI Studio Monitor and NDI switchers then see it like a camera: no HDMI cable needed.
+Any BEAMtime Pi, controller or display, can also send the clock over the network as an **NDI** source. vMix, OBS (with the DistroAV plugin), TriCaster, NDI Studio Monitor and NDI switchers then see it like a camera: no HDMI cable needed.
 
 ```bash
 scripts/push.sh beam@beamtimer-display-1.local --role display --ndi "Stage clock"
@@ -144,7 +144,7 @@ scripts/push.sh beam@beamtimer-control.local --role controller --ndi --ndi-alpha
 ```
 
 - The source appears as **`HOSTNAME (Stage clock)`**, e.g. `BEAMTIMER-DISPLAY-1 (Stage clock)`.
-- It shows the **clean clock**: LED-style digits and the progress bar, in your Settings colours, flashing in overtime, gone on Black. **Messages to the presenter are left out** on purpose, so they never go to air. The title and time of day aren't drawn either.
+- It shows the **clock as the presenter sees it**: the three **signal lights** (green, amber, red, as on the control panel), LED-style digits, the **presenter message** under the clock (flashing messages blink in the warning colour) and the progress bar, in your Settings colours, flashing in overtime, gone on Black. The message needs `python3-pil` and `fonts-dejavu-core`, which `--ndi` installs.
 - `--ndi-alpha` gives a transparent background (unlit segments hidden), to key the clock over camera shots.
 - The first install downloads the free **NDI SDK** from ndi.video and **shows you its licence to accept** (press space to page through, then answer the question). `--accept-ndi-license` skips that if you have already read it. Only the library file (`libndi.so`) is kept, in `/usr/local/lib`.
 - Full NDI uses roughly 100–150 Mbit/s at 1080p: use **wired gigabit Ethernet**, not Wi-Fi. If the Pi struggles, try `--ndi-size 1280x720`. The Pi 5 has no hardware video encoder, so NDI|HX isn't possible; this is full NDI.

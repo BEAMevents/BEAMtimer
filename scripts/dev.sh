@@ -1,5 +1,5 @@
 #!/bin/bash
-# Try BEAMtimer on this Mac without any Pis: starts a controller (port 8080)
+# Try BEAMtime on this Mac without any Pis: starts a controller (port 8080)
 # and a pretend display Pi (port 8081) that finds the controller like a real one.
 #   Control:  http://localhost:8080/control
 #   Display:  http://localhost:8081/display   (served by the pretend display Pi)

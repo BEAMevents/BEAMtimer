@@ -1,6 +1,6 @@
 #!/bin/bash
 # Clock and network changes asked for on the control page (Settings → Time of day / Network).
-# Run as root by beamtimer-system.service when the BEAMtimer server (not root) leaves
+# Run as root by beamtimer-system.service when the BEAMtime server (not root) leaves
 # /var/lib/beamtimer/system-request, one JSON request:
 #   {"id":"…","action":"ntp","on":true}                       internet time on / off
 #   {"id":"…","action":"time","at":1794450000000}             set the clock (ms since 1970, UTC); turns internet time off
@@ -14,7 +14,7 @@ OUT="$DIR/system-status.json"
 [ -f "$REQ" ] || exit 0
 mv -f "$REQ" "$REQ.taken"
 
-# Read the request with node (installed with BEAMtimer); only plain checked values come out.
+# Read the request with node (installed with BEAMtime); only plain checked values come out.
 eval "$(node -e '
   let r = {}; try { r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch {}
   const ok = (v, re) => (re.test(String(v)) ? String(v) : "");

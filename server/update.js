@@ -1,5 +1,5 @@
 // Updates.
-//   Controller: "Check for updates" asks GitHub for the newest BEAMtimer release, downloads
+//   Controller: "Check for updates" asks GitHub for the newest BEAMtime release, downloads
 //               beamtimer-X.Y.Z.tar.gz, checks it against the release's .sha256 file, then
 //               asks the Pi to install it.
 //   Display:    follows the controller: when the controller runs a newer version, the display
@@ -23,8 +23,8 @@ function newer(a, b) {
 }
 
 async function get(url, timeout = 20000) {
-  const r = await fetch(url, { headers: { 'User-Agent': 'BEAMtimer', Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(timeout), redirect: 'follow' });
-  if (!r.ok) throw new Error(r.status === 404 ? 'No BEAMtimer release found yet.' : `Update server answered ${r.status}.`);
+  const r = await fetch(url, { headers: { 'User-Agent': 'BEAMtime', Accept: 'application/vnd.github+json' }, signal: AbortSignal.timeout(timeout), redirect: 'follow' });
+  if (!r.ok) throw new Error(r.status === 404 ? 'No BEAMtime release found yet.' : `Update server answered ${r.status}.`);
   return r;
 }
 
@@ -85,7 +85,7 @@ class Updater {
       const latest = String(j.tag_name || '').replace(/^v/, '');
       const asset = (j.assets || []).find(a => BUNDLE_RE.test(a.name));
       const shaAsset = asset && (j.assets || []).find(a => a.name === asset.name + '.sha256');
-      if (!latest || !asset || !shaAsset) throw new Error('The newest release has no BEAMtimer update file.');
+      if (!latest || !asset || !shaAsset) throw new Error('The newest release has no BEAMtime update file.');
       const sha = ((await (await get(shaAsset.browser_download_url)).text()).match(/\b[0-9a-f]{64}\b/) || [])[0];
       if (!sha) throw new Error('The newest release has no valid checksum.');
       this.release = { version: BUNDLE_RE.exec(asset.name)[1], url: asset.browser_download_url, sha256: sha };
@@ -123,7 +123,7 @@ class Updater {
     return file;
   }
 
-  // Hand the checked file to the root installer (pi/update.sh), which restarts BEAMtimer.
+  // Hand the checked file to the root installer (pi/update.sh), which restarts BEAMtime.
   request(file, sha256, version) {
     if (!this.canInstall()) return this.set({ phase: 'error', error: `Version ${version} downloaded and checked, but this machine can't install it (installing works on a Pi set up with pi/install.sh).` });
     const req = path.join(this.dataDir, 'update-request');

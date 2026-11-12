@@ -1,4 +1,4 @@
-// BEAMtimer tests: timer maths, then a real controller + display server talking
+// BEAMtime tests: timer maths, then a real controller + display server talking
 // over WebSocket. Run: node test/unit.js
 const assert = require('assert');
 const path = require('path');

@@ -21,9 +21,9 @@ echo "Made dist/$NAME ($(du -h "$OUT" | cut -f1 | tr -d ' ')), sha256 $(cut -c1-
 [ "${1:-}" = --publish ] || exit 0
 [ -n "${GH_TOKEN:-}" ] || { echo "Set GH_TOKEN to publish." >&2; exit 1; }
 API="https://api.github.com/repos/$REPO"
-NOTES="BEAMtimer $VERSION"
+NOTES="BEAMtime $VERSION"
 [ -f "$DIR/dist/notes.txt" ] && NOTES="$(cat "$DIR/dist/notes.txt")"
-BODY=$(NOTES="$NOTES" VERSION="$VERSION" python3 -c 'import json,os; print(json.dumps({"tag_name":"v"+os.environ["VERSION"],"name":"BEAMtimer "+os.environ["VERSION"],"body":os.environ["NOTES"]}))')
+BODY=$(NOTES="$NOTES" VERSION="$VERSION" python3 -c 'import json,os; print(json.dumps({"tag_name":"v"+os.environ["VERSION"],"name":"BEAMtime "+os.environ["VERSION"],"body":os.environ["NOTES"]}))')
 REL=$(curl -fsS -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$API/releases" -d "$BODY")
 UPLOAD=$(printf '%s' "$REL" | python3 -c 'import json,sys; print(json.load(sys.stdin)["upload_url"].split("{")[0])')
 for f in "$NAME" "$NAME.sha256"; do

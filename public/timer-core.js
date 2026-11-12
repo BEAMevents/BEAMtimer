@@ -1,4 +1,4 @@
-// BEAMtimer timer maths, shared by the server (Node) and the pages (browser).
+// BEAMtime timer maths, shared by the server (Node) and the pages (browser).
 // The state never stores "time left": it stores when the timer started (in the
 // controller's clock) and how much had run before. Every screen works out the
 // time from that, so displays keep counting correctly if the network drops.

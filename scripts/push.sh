@@ -1,5 +1,5 @@
 #!/bin/bash
-# Install or update BEAMtimer on a Pi from this Mac, over SSH.
+# Install or update BEAMtime on a Pi from this Mac, over SSH.
 #   scripts/push.sh beam@beamtimer-control.local --role controller
 #   scripts/push.sh beam@beamtimer-display-1.local --role display --reboot
 #   scripts/push.sh beam@beamtimer-display-1.local --role display --ndi "Stage clock"
@@ -11,7 +11,7 @@ HOST="$1"; shift
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ARGS=$(printf '%q ' "$@")
 
-echo "Copying BEAMtimer to ${HOST}…"
+echo "Copying BEAMtime to ${HOST}…"
 COPYFILE_DISABLE=1 tar -C "$DIR" -czf - server public pi package.json README.md |
   ssh "$HOST" 'rm -rf /tmp/beamtimer-src && mkdir -p /tmp/beamtimer-src && tar -xzf - -C /tmp/beamtimer-src --warning=no-unknown-keyword'
 

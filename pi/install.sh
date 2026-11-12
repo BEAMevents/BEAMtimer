@@ -1,5 +1,5 @@
 #!/bin/bash
-# BEAMtimer installer for Raspberry Pi 5 (Raspberry Pi OS Bookworm or Trixie, 64-bit, Lite or Desktop).
+# BEAMtime installer for Raspberry Pi 5 (Raspberry Pi OS Bookworm or Trixie, 64-bit, Lite or Desktop).
 # Run on the Pi as root from the BEAMtimer folder:
 #   sudo bash pi/install.sh --role controller
 #   sudo bash pi/install.sh --role display
@@ -11,14 +11,14 @@
 #   --pin 1234                  controller only: PIN needed to use the control page
 #   --port 80                   web port (default 80)
 #   --no-kiosk                  don't open the timer full screen at boot (server only)
-#   --ndi ["Name"]              also send the timer as an NDI source (default name: BEAMtimer)
+#   --ndi ["Name"]              also send the timer as an NDI source (default name: BEAMtime)
 #   --ndi-size 1280x720         NDI picture size (default 1920x1080)
 #   --ndi-fps 30                NDI frame rate (default 30)
 #   --ndi-alpha                 NDI with a transparent background, for keying over cameras
 #   --no-ndi                    turn NDI off again
 #   --accept-ndi-license        you have read and accept the NDI SDK licence (otherwise it is shown to you)
 #   --reboot                    reboot when done
-#   --update                    used by "Check for updates": same settings as now, then restart BEAMtimer
+#   --update                    used by "Check for updates": same settings as now, then restart BEAMtime
 # Needs internet once (to install nodejs, chromium and, on Lite, cage). Re-running updates in place.
 set -euo pipefail
 
@@ -50,7 +50,7 @@ done
 
 # --update: take every setting from this Pi's current install.
 if [ "$UPDATE" = 1 ]; then
-  [ -f /etc/beamtimer/config.json ] || { echo "Error: --update needs an installed BEAMtimer" >&2; exit 1; }
+  [ -f /etc/beamtimer/config.json ] || { echo "Error: --update needs an installed BEAMtime" >&2; exit 1; }
   eval "$(node -e '
     const c = JSON.parse(require("fs").readFileSync("/etc/beamtimer/config.json", "utf8"));
     const q = v => "\x27" + String(v == null ? "" : v).replace(/\x27/g, "") + "\x27";
@@ -93,12 +93,13 @@ if [ "$NDI" = keep ]; then
       console.log(`NDI_NAME=${q(n.name || "")}; NDI_SIZE=${q(n.size || "1920x1080")}; NDI_FPS=${q(n.fps || 30)}; NDI_ALPHA=${n.alpha ? 1 : 0}`);' 2>/dev/null || true)"
   fi
 fi
-[ -n "$NDI_NAME" ] || NDI_NAME="BEAMtimer"
+[ -n "$NDI_NAME" ] || NDI_NAME="BEAMtime"
+NDI_NAME="${NDI_NAME/BEAMtimer/BEAMtime}"   # the app was renamed BEAMtime in 1.3.0
 
 DESKTOP=0
 if systemctl is-enabled lightdm >/dev/null 2>&1 || [ -x /usr/sbin/lightdm ]; then DESKTOP=1; fi
 
-say "BEAMtimer $ROLE for user $USER_NAME ($([ $DESKTOP = 1 ] && echo 'Pi OS Desktop' || echo 'Pi OS Lite'))"
+say "BEAMtime $ROLE for user $USER_NAME ($([ $DESKTOP = 1 ] && echo 'Pi OS Desktop' || echo 'Pi OS Lite'))"
 
 # ---------- packages ----------
 export DEBIAN_FRONTEND=noninteractive
@@ -106,7 +107,7 @@ PKGS=(nodejs avahi-daemon avahi-utils libnss-mdns curl)
 if [ $KIOSK = 1 ]; then
   [ $DESKTOP = 1 ] || PKGS+=(cage fonts-dejavu-core)
 fi
-[ "$NDI" = 1 ] && PKGS+=(python3 libavahi-client3)
+[ "$NDI" = 1 ] && PKGS+=(python3 python3-pil fonts-dejavu-core libavahi-client3)
 MISSING=()
 for p in "${PKGS[@]}"; do dpkg -s "$p" >/dev/null 2>&1 || MISSING+=("$p"); done
 if [ ${#MISSING[@]} -gt 0 ] || [ "$UPDATE" = 0 ]; then
@@ -146,10 +147,10 @@ chgrp "$USER_GROUP" /etc/beamtimer/config.json
 chmod 640 /etc/beamtimer/config.json   # may hold the PIN
 
 # ---------- service ----------
-say "Starting the BEAMtimer service"
+say "Starting the BEAMtime service"
 cat > /etc/systemd/system/beamtimer.service <<EOF
 [Unit]
-Description=BEAMtimer ($ROLE)
+Description=BEAMtime ($ROLE)
 After=network.target avahi-daemon.service
 Wants=avahi-daemon.service
 
@@ -174,7 +175,7 @@ systemctl restart beamtimer
 # "Check for updates" (server/update.js) leaves a request file; this root service installs it.
 cat > /etc/systemd/system/beamtimer-update.path <<EOF
 [Unit]
-Description=BEAMtimer update request
+Description=BEAMtime update request
 
 [Path]
 PathExists=/var/lib/beamtimer/update-request
@@ -184,7 +185,7 @@ WantedBy=multi-user.target
 EOF
 cat > /etc/systemd/system/beamtimer-update.service <<EOF
 [Unit]
-Description=Install a BEAMtimer update
+Description=Install a BEAMtime update
 
 [Service]
 Type=oneshot
@@ -193,7 +194,7 @@ EOF
 # Settings → Time of day / Network (server/system.js) asks this root service to change the clock or IP.
 cat > /etc/systemd/system/beamtimer-system.path <<EOF
 [Unit]
-Description=BEAMtimer clock / network request
+Description=BEAMtime clock / network request
 
 [Path]
 PathExists=/var/lib/beamtimer/system-request
@@ -203,7 +204,7 @@ WantedBy=multi-user.target
 EOF
 cat > /etc/systemd/system/beamtimer-system.service <<EOF
 [Unit]
-Description=Change the clock or network for BEAMtimer
+Description=Change the clock or network for BEAMtime
 
 [Service]
 Type=oneshot
@@ -252,7 +253,7 @@ if [ "$NDI" = 1 ]; then
   say "Starting the NDI output \"$NDI_NAME\" ($NDI_SIZE, $NDI_FPS fps$([ $NDI_ALPHA = 1 ] && echo ', transparent'))"
   cat > /etc/systemd/system/beamtimer-ndi.service <<EOF
 [Unit]
-Description=BEAMtimer NDI output
+Description=BEAMtime NDI output
 After=beamtimer.service avahi-daemon.service
 Wants=beamtimer.service
 
@@ -286,7 +287,7 @@ if [ "$ROLE" = controller ]; then
 <?xml version="1.0" standalone='no'?>
 <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
 <service-group>
-  <name replace-wildcards="yes">BEAMtimer on %h</name>
+  <name replace-wildcards="yes">BEAMtime on %h</name>
   <service>
     <type>_beamtimer._tcp</type>
     <port>$PORT</port>
