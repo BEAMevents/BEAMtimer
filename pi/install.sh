@@ -361,9 +361,12 @@ else
   echo "This display looks for the controller: $CONTROLLER"
 fi
 if [ "$UPDATE" = 1 ]; then
-  # Restart the full-screen browser so it runs the new version (the page also reloads by itself).
-  if [ $KIOSK = 1 ]; then pkill -x cage 2>/dev/null || pkill -f 'beamtimer-chromium' 2>/dev/null || true; fi
   echo "Updated to $(node -p 'require("'"$APP"'/package.json").version')"
+  # Restart the whole Pi so everything (screen, browser, NDI, packages) starts fresh on the new version.
+  # Restarting only the screen could leave it frozen. Delayed a few seconds so the update can report "done".
+  echo "Restarting the Pi in 5 seconds…"
+  systemd-run --on-active=5 --unit="beamtimer-restart-$(date +%s)" /bin/systemctl reboot >/dev/null 2>&1 \
+    || (sleep 5; systemctl reboot) >/dev/null 2>&1 &
 elif [ $REBOOT = 1 ]; then
   echo "Rebooting…"; systemctl reboot
 else

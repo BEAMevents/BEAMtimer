@@ -92,9 +92,11 @@ class Updater {
       const available = newer(this.release.version, this.version);
       this.set({ phase: available ? 'available' : 'current', latest: this.release.version, notes: String(j.body || '').slice(0, 1500), checkedAt: Date.now() });
     } catch (e) {
-      const net = e.name === 'TimeoutError' || /fetch failed|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH/.test(`${e.message} ${e.cause && (e.cause.code || e.cause.message)}`);
+      const why = (e.cause && (e.cause.code || e.cause.message)) || (e.name === 'TimeoutError' ? 'timed out' : '');
+      const net = e.name === 'TimeoutError' || /fetch failed|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ENETUNREACH/.test(`${e.message} ${why}`);
+      console.error('Update check failed:', e.message, why);
       this.set({ phase: 'error', error: net
-        ? 'Can\'t reach the update server. The controller needs internet to check for updates.' : e.message });
+        ? `Can't reach the update server${why ? ` (${String(why).slice(0, 60)})` : ''}. The controller needs internet to check for updates. If its internet works, restart the Pi and try again.` : e.message });
     } finally { this.busy = false; }
     return this.status;
   }

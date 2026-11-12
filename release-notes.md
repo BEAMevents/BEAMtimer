@@ -1,3 +1,9 @@
+# BEAMtime 1.3.2
+
+- After an update the Pi restarts by itself, so the screen no longer freezes.
+- Scan to control and Scan to display QR codes side by side in one box.
+- "Can't reach the update server" now says why, and suggests restarting the Pi.
+
 # BEAMtime 1.3.1
 
 - Settings → Scan to display: a QR code that turns a phone, tablet or laptop into a presenter display.

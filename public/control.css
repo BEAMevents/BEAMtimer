@@ -254,7 +254,13 @@ button.big { min-height: 60px; font-size: 20px; }
 
 
 /* ---------- scan to control ---------- */
-.qrcard { grid-column: 1 / -1; }
+.qrcard { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.qrhalf { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.qrhalf + .qrhalf { border-left: 1px solid var(--line, rgba(255, 255, 255, .1)); padding-left: 28px; }
+@media (max-width: 700px) {
+  .qrcard { grid-template-columns: 1fr; }
+  .qrhalf + .qrhalf { border-left: 0; padding-left: 0; border-top: 1px solid var(--line, rgba(255, 255, 255, .1)); padding-top: 18px; }
+}
 .qrs { display: flex; flex-wrap: wrap; gap: 20px; }
 .qr { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .qr svg { width: 210px; height: 210px; border-radius: 10px; display: block; }

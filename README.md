@@ -116,8 +116,8 @@ Remove: `sudo bash /opt/beamtimer/pi/uninstall.sh`.
 
 **Settings → Updates → Check for updates** on the control page (Pi screen, phone or laptop):
 1. The controller asks GitHub for the newest release of `BEAMevents/BEAMtimer` (the controller needs internet for this).
-2. If there is a newer version, it shows what's new and an **Install update** button (tap twice: it restarts BEAMtime).
-3. The controller downloads `beamtimer-X.Y.Z.tar.gz`, checks it against the release's checksum, and installs it with this Pi's settings. BEAMtime and the full-screen browser restart (about 30 seconds) and the page reloads by itself.
+2. If there is a newer version, it shows what's new and an **Install update** button (tap twice: the Pi restarts when it's done).
+3. The controller downloads `beamtimer-X.Y.Z.tar.gz`, checks it against the release's checksum, and installs it with this Pi's settings. Then the **Pi restarts by itself** (about 1–2 minutes in all), so the screen, browser and NDI all start fresh on the new version; the page comes back by itself. Display Pis follow the controller the same way, so their screens go dark for about a minute while they restart.
 4. **Display Pis follow by themselves** within a minute or two: they see the controller runs a newer version and copy the same file from it, so displays don't need internet. Settings → Displays shows each display's version.
 
 How it installs: the BEAMtime server isn't root, so it leaves a request in `/var/lib/beamtimer`; the root service `beamtimer-update` (`pi/update.sh`) checks the file again and re-runs the installer with `--update`. Log: `/var/lib/beamtimer/update.log`.

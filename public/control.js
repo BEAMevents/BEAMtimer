@@ -589,7 +589,7 @@
       current: 'BEAMtime is up to date.',
       available: `Version ${upd.latest} is available.`,
       downloading: `Downloading version ${upd.latest}…`,
-      installing: `Installing version ${upd.latest}. BEAMtime restarts in about 30 seconds, then this page reloads.`,
+      installing: `Installing version ${upd.latest}. When it's done the Pi restarts by itself (about 1–2 minutes in all), then this page comes back.`,
       updated: `Updated to version ${upd.current}. Display Pis follow within a minute or two.`,
       error: upd.error,
       failed: upd.error,
