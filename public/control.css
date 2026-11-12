@@ -137,6 +137,12 @@ header .title { font-size: 20px; font-weight: 600; margin-right: auto; white-spa
 .msgstrip .flabel { font-size: 12px; color: #9a9a9a; flex: 0 0 auto; }
 .msgtext { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #555; font-size: 18px; }
 .msgstrip.live .msgtext { color: #ffb000; font-weight: 600; }
+/* While a message is on the presenter screens, the box flashes amber so nobody forgets it's up. */
+.msgstrip.live { animation: msg-live 1.2s steps(1) infinite; }
+@keyframes msg-live {
+  0% { border-color: #ffb000; background: #2a1e00; box-shadow: 0 0 14px rgba(255, 176, 0, .45); }
+  50% { border-color: #5a4300; background: #040404; box-shadow: none; }
+}
 .msgstrip button { flex: 0 0 auto; min-height: 36px; }
 
 .opts { display: flex; flex-direction: column; gap: 14px; }

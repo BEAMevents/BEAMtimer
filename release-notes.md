@@ -1,3 +1,7 @@
+# BEAMtime 1.3.3
+
+- The On screen box on the control panel flashes amber while a message is showing on the presenter screens.
+
 # BEAMtime 1.3.2
 
 - After an update the Pi restarts by itself, so the screen no longer freezes.
