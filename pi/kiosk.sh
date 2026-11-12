@@ -22,6 +22,9 @@ for _ in $(seq 60); do
 done
 
 while true; do
+  # A restart or power cut can leave Chromium's "already running" lock behind; Chromium then
+  # quits at once and the screen stays black. Nothing else uses this profile, so clear it.
+  rm -f "$PROFILE"/SingletonLock "$PROFILE"/SingletonSocket "$PROFILE"/SingletonCookie
   # Stop Chromium offering to "restore pages" after a power cut.
   sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]*"/"exit_type":"Normal"/' \
     "$PROFILE/Default/Preferences" 2>/dev/null

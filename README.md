@@ -19,6 +19,7 @@ Stage timer for Raspberry Pi 5. One Pi is the **controller**; any number of **di
 - The controller saves the timer, so it carries on after a restart too.
 - **NDI output** (optional, `--ndi`): any Pi can also send the clock as an NDI video source for vMix, OBS, TriCaster or a switcher, with a transparent background for keying if you want. See [NDI output](#ndi-output).
 - **Time of day** in Settings: the controller Pi's clock, set by **internet time** or **by hand** (a time picker, or "use this device's time" from a phone). Display Pis show the controller's time. A running timer isn't affected when the clock is changed.
+- **No router? Still works**: with no DHCP server, each Pi takes a self-assigned 169.254.x.x address (like a Mac does) after about a minute, and displays still find the controller by name. Laptops and phones on the same switch reach `http://beamtimer-control.local/control`. (Scan for new displays only checks normal addresses.)
 - **Network** in Settings: the controller's Ethernet address, **automatic (DHCP)** or a **fixed IP**.
 - **Scan for new displays** in Settings → Displays: the controller checks every address on its network for BEAMtime display Pis and shows which are connected (works without mDNS).
 - **Scan to display** in Settings: a QR code that opens the presenter clock on a phone, tablet or laptop (tap for full screen).

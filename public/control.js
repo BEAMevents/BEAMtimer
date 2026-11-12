@@ -698,7 +698,7 @@
     const port = info.port === 80 ? '' : ':' + info.port;
     const host = `${info.hostname.replace(/\.(local|localdomain)$/, '')}.local`;
     const kind = n => (/^(wl|wlan|wifi)/i.test(n) ? 'Wi-Fi' : /^(eth|end)/i.test(n) ? 'Ethernet' : n);
-    const targets = info.ips.length ? info.ips.slice(0, 3).map(i => ({ label: kind(i.ifname), host: i.address })) : [{ label: 'Network', host }];
+    const targets = info.ips.length ? info.ips.slice(0, 3).map(i => ({ label: kind(i.ifname) + (i.selfAssigned ? ' (no DHCP)' : ''), host: i.address })) : [{ label: 'Network', host }];
     const codes = (el, page) => { el.innerHTML = ''; for (const t of targets) {
       const url = `http://${t.host}${port}/${page}`;
       const box = document.createElement('figure');

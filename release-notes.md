@@ -1,3 +1,8 @@
+# BEAMtime 1.3.9
+
+- Fixes display Pi screens staying black after an automatic restart (Chromium's leftover "already running" lock is cleared).
+- Works with no DHCP server (just a switch, no router): each Pi takes a self-assigned 169.254.x.x address after about a minute and the display still finds the controller. Needs internet once to install the small avahi-autoipd package.
+
 # BEAMtime 1.3.8
 
 - Display Pi screens reconnect by themselves: if the page stops responding, or stays disconnected while the controller is reachable, the browser restarts (checked every 15 s).

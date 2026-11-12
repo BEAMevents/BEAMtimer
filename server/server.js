@@ -52,9 +52,13 @@ const NAME = cfg.name || os.hostname().replace(/\.local$/, '');
 function localIPs() {
   const out = [];
   for (const [ifname, list] of Object.entries(os.networkInterfaces())) {
-    for (const a of list || []) if (a.family === 'IPv4' && !a.internal && !a.address.startsWith('169.254.')) out.push({ ifname, address: a.address });
+    for (const a of list || []) {
+      if (a.family !== 'IPv4' || a.internal) continue;
+      // 169.254.x.x: self-assigned (no DHCP server). Listed last, and only used when there's nothing else.
+      out.push({ ifname, address: a.address, ...(a.address.startsWith('169.254.') ? { selfAssigned: true } : {}) });
+    }
   }
-  return out;
+  return out.sort((a, b) => !!a.selfAssigned - !!b.selfAssigned);
 }
 
 // ---------- timer state (controller only) ----------
@@ -160,12 +164,15 @@ function avahiBrowse() {
   return new Promise(resolve => {
     execFile('avahi-browse', ['-rpt', '_beamtimer._tcp'], { timeout: 4000 }, (err, out) => {
       if (err || !out) return resolve(null);
+      const found = [];
       for (const line of out.split('\n')) {
         const f = line.split(';');
         // =;eth0;IPv4;BEAMtime on host;_beamtimer._tcp;local;host.local;192.168.1.20;80;"role=controller"
-        if (f[0] === '=' && f[2] === 'IPv4' && f[7]) return resolve(`http://${f[7]}:${f[8]}`);
+        if (f[0] === '=' && f[2] === 'IPv4' && f[7]) found.push(`http://${f[7]}:${f[8]}`);
       }
-      resolve(null);
+      // A normal address first; a self-assigned one (169.254.x.x, no DHCP) also works on the same switch.
+      found.sort((a, b) => a.includes('//169.254.') - b.includes('//169.254.'));
+      resolve(found[0] || null);
     });
   });
 }
@@ -199,7 +206,8 @@ function scanDisplays() {
   if (scanning) return scanning;
   const self = new Set(localIPs().map(i => i.address));
   const targets = [];
-  for (const { address } of localIPs()) {
+  for (const { address, selfAssigned } of localIPs()) {
+    if (selfAssigned) continue;   // 169.254.0.0/16 is too big to check address by address
     const base = address.split('.').slice(0, 3).join('.');
     for (let n = 1; n < 255; n++) { const ip = `${base}.${n}`; if (!self.has(ip) && !targets.includes(ip)) targets.push(ip); }
   }

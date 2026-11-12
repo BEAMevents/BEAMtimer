@@ -103,7 +103,7 @@ say "BEAMtime $ROLE for user $USER_NAME ($([ $DESKTOP = 1 ] && echo 'Pi OS Deskt
 
 # ---------- packages ----------
 export DEBIAN_FRONTEND=noninteractive
-PKGS=(nodejs avahi-daemon avahi-utils libnss-mdns curl)
+PKGS=(nodejs avahi-daemon avahi-utils avahi-autoipd libnss-mdns curl)
 if [ $KIOSK = 1 ]; then
   [ $DESKTOP = 1 ] || PKGS+=(cage fonts-dejavu-core)
 fi
@@ -280,6 +280,29 @@ else
     systemctl daemon-reload
   fi
 fi
+
+# No DHCP server (just a switch, no router)? Take a self-assigned 169.254.x.x address on Ethernet,
+# like a Mac does, so the Pis still find each other. avahi-autoipd only does this while the
+# interface has no other IPv4 address, and steps aside when DHCP or a fixed IP is working.
+ETH="$(ls /sys/class/net 2>/dev/null | grep -E '^(eth|en)' | head -1)"
+ETH="${ETH:-eth0}"
+cat > /etc/systemd/system/beamtimer-linklocal.service <<EOF
+[Unit]
+Description=BEAMtime self-assigned address on $ETH when there is no DHCP server
+After=network-pre.target NetworkManager.service
+Wants=network-pre.target
+
+[Service]
+ExecStart=/usr/sbin/avahi-autoipd --syslog $ETH
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable beamtimer-linklocal >/dev/null 2>&1 || true
+systemctl restart beamtimer-linklocal || true
 
 # The controller announces itself so display Pis find it with no IP typed in.
 if [ "$ROLE" = controller ]; then
