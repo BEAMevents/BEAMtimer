@@ -1,0 +1,88 @@
+/* The timer screen: full screen on display Pis, small preview on the control page.
+   Sizes use container units (cqh/cqw) so the preview is an exact miniature. */
+.screen {
+  --normal: #ffffff;
+  --warn: #ffb000;
+  --danger: #ff3b30;
+  --c: var(--normal);
+  --bar: #34c759;
+  position: relative;
+  container-type: size;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: "Inter", "Helvetica Neue", "DejaVu Sans", "Noto Sans", Arial, sans-serif;
+  user-select: none;
+}
+.screen.phase-warn { --c: var(--warn); --bar: var(--warn); }
+.screen.phase-danger, .screen.phase-over { --c: var(--danger); --bar: var(--danger); }
+.screen.waiting { --c: #3a3a3a; }
+
+.scr-top {
+  flex: 0 0 12cqh;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4cqw;
+  padding: 0 3cqw;
+  font-size: 6.5cqh;
+  color: #b8b8b8;
+  white-space: nowrap;
+}
+.scr-label { overflow: hidden; text-overflow: ellipsis; }
+.scr-clock { font-variant-numeric: tabular-nums; margin-left: auto; }
+
+.scr-main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 3cqw; }
+.scr-time {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--c);
+  transition: color .3s;
+}
+.scr-time span {
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.has-msg .scr-time { flex: 0 0 46%; }
+.scr-msg {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+.has-msg .scr-msg { display: flex; }
+.scr-msg span {
+  display: inline-block;
+  max-width: 100%;
+  line-height: 1.12;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: #fff;
+}
+
+.scr-bar { flex: 0 0 1.8cqh; margin: 1.5cqh 3cqw 3.5cqh; background: #1d1d1d; border-radius: 1cqh; overflow: hidden; }
+.scr-bar div { height: 100%; background: var(--bar); transform-origin: left; transition: background .3s; }
+
+.flash-over .scr-time span { animation: scr-blink 1s steps(1) infinite; }
+.msg-flash .scr-msg span { animation: scr-blink .8s steps(1) infinite; color: var(--warn); }
+@keyframes scr-blink { 50% { opacity: .2; } }
+
+.blackout > *:not(.scr-ident) { visibility: hidden; }
+
+.scr-ident { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center; padding: 5cqw; background: #0a4dff; color: #fff; font-size: 14cqh; font-weight: 700; }
+.identify .scr-ident { display: flex; }
+
+.scr-link { position: absolute; left: 1.6cqh; bottom: 1.6cqh; width: 1.6cqh; height: 1.6cqh; min-width: 6px; min-height: 6px; border-radius: 50%; background: #ff9500; opacity: .85; }

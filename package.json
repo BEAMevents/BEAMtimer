@@ -1,0 +1,14 @@
+{
+  "name": "beamtimer",
+  "productName": "BEAMtimer",
+  "version": "1.1.0",
+  "description": "BEAMtimer — stage timer for Raspberry Pi 5: one Pi (or any browser) controls, any number of Pis show the clock full screen on HDMI",
+  "author": "BEAM Events",
+  "license": "UNLICENSED",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js --role controller --port 8080",
+    "display": "node server/server.js --role display --port 8081 --controller localhost:8080",
+    "test": "node test/unit.js"
+  }
+}

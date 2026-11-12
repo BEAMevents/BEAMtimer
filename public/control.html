@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>BEAMtimer Control</title>
+<link rel="icon" type="image/png" href="/assets/icon.png">
+<link rel="apple-touch-icon" href="/assets/icon.png">
+<link rel="stylesheet" href="/assets/screen.css">
+<link rel="stylesheet" href="/assets/control.css">
+<script src="/assets/fit.js"></script>
+</head>
+<body>
+
+<!-- ============ MAIN: hardware-style timer panel ============ -->
+<section class="view face" id="v-main">
+  <div class="topbar">
+    <div class="status pill off">Connecting…</div>
+    <div class="plate"><b>BEAM</b><i>timer</i></div>
+    <div class="topright">
+      <span class="dispcount pill">0 displays</span>
+      <button class="hbtn" data-go="settings" aria-label="Settings">⚙︎ Settings</button>
+    </div>
+  </div>
+
+  <div id="blackoutBar" class="banner" hidden>
+    Displays are blacked out <button id="blackoutOff">Show timer</button>
+  </div>
+
+  <div class="facegrid">
+    <div class="col-prog">
+      <button id="presetsReset" class="flabel flabel-btn" title="Tap to reset all presets to default">Presets<small>tap to reset</small></button>
+      <div id="presets" class="programs"></div>
+    </div>
+
+    <div class="col-center">
+      <div class="lamps">
+        <i class="lamp g" id="lampG"></i><i class="lamp y" id="lampY"></i><i class="lamp r" id="lampR"></i>
+      </div>
+      <div class="ledwin main"><div class="led" id="ledMain"></div></div>
+      <div class="subs">
+        <div class="ledwin small"><div class="led" id="ledTotal"></div></div>
+        <div class="ledwin small"><div class="led" id="ledSum"></div></div>
+      </div>
+      <div class="ctrlrow">
+        <div class="ctrl">
+          <div class="flabel">Total time</div>
+          <div class="arrows">
+            <button class="rbtn arrow" id="totUp" aria-label="More time">▲</button>
+            <button class="rbtn arrow" id="totDown" aria-label="Less time">▼</button>
+          </div>
+        </div>
+        <div class="ctrl setsec">
+          <div class="flabel tiny">Set<br>seconds</div>
+          <button class="secbtn" id="setSec" aria-label="Set seconds"><span class="led" id="ledSec"></span></button>
+        </div>
+        <div class="ctrl">
+          <div class="flabel">Sum-up</div>
+          <div class="arrows">
+            <button class="rbtn arrow" id="sumUp" aria-label="Yellow earlier">▲</button>
+            <button class="rbtn arrow" id="sumDown" aria-label="Yellow later">▼</button>
+          </div>
+        </div>
+      </div>
+      <div class="clearrow">
+        <div class="flabel">Clear</div>
+        <button class="rbtn small-r" id="clearBtn" aria-label="Clear the time to 0:00">■</button>
+      </div>
+      <div class="msgstrip" id="onStage">
+        <span class="flabel">On screen</span><span id="onStageText" class="msgtext">No message</span>
+        <button id="clearStage" class="small danger" hidden>✕ Remove</button>
+      </div>
+    </div>
+
+    <div class="col-opts">
+      <div class="flabel">Options</div>
+      <div class="opts">
+        <div class="opt"><i class="dot-led" id="dotBlink"></i><button class="rbtn" id="optBlink">BLINK</button></div>
+        <div class="opt"><i class="dot-led" id="dotBlack"></i><button class="rbtn" id="optBlack">BLACK</button></div>
+        <div class="opt"><i class="dot-led" id="dotMsg"></i><button class="rbtn" id="openMsg">MSG</button></div>
+        <div class="opt"><i class="dot-led" id="dotEnd"></i><button class="rbtn endby-btn" id="openEnd" aria-label="End by a time">END<br>BY</button></div>
+      </div>
+      <div class="transport">
+        <div class="tbtn"><span class="flabel">Repeat</span><button class="rbtn" id="resetBtn" aria-label="Reset">⏮</button></div>
+        <div class="tbtn"><span class="flabel">Start</span><button class="rbtn start" id="startBtn" aria-label="Start or stop">▶</button><span class="flabel">(Stop)</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MESSAGE (keyboard) ============ -->
+<section class="view face" id="v-kb" hidden>
+  <header>
+    <button class="hbtn back" id="kbBack">‹ Back</button>
+    <div class="title" id="kbTitle">Message to presenter</div>
+    <div class="status pill off">Connecting…</div>
+  </header>
+  <div class="kb-wrap">
+    <div class="kb-top">
+      <input id="kbInput" autocomplete="off" autocapitalize="sentences" spellcheck="false" maxlength="500">
+      <button id="kbDone" class="go kb-done">Send ▶</button>
+    </div>
+    <div class="kb-tools" id="kbMsgTools">
+      <button id="kbFlash" class="toggle">⚡ Flash</button>
+      <button id="kbClearText">Clear text</button>
+      <div class="kb-onstage" id="kbOnStage" hidden><span></span><button id="kbRemove" class="small danger">✕ Remove from screen</button></div>
+    </div>
+    <div class="chips kb-quick" id="kbQuick"></div>
+    <div class="kb" id="kb"></div>
+  </div>
+</section>
+
+<!-- ============ END BY (pick a time of day) ============ -->
+<section class="view face" id="v-endby" hidden>
+  <header>
+    <button class="hbtn back" data-go="main">‹ Back</button>
+    <div class="title">End by</div>
+    <div class="status pill off">Connecting…</div>
+  </header>
+  <main class="endby">
+    <div class="ep-row">
+      <div class="ep-col">
+        <div class="flabel">Hour</div>
+        <button class="rbtn arrow" id="epHourUp" aria-label="Hour later">▲</button>
+        <div class="ledwin ep"><div class="led" id="epHour"></div></div>
+        <button class="rbtn arrow" id="epHourDown" aria-label="Hour earlier">▼</button>
+      </div>
+      <div class="ep-colon">:</div>
+      <div class="ep-col">
+        <div class="flabel">Minute</div>
+        <button class="rbtn arrow" id="epMinUp" aria-label="Minute later">▲</button>
+        <div class="ledwin ep"><div class="led" id="epMin"></div></div>
+        <button class="rbtn arrow" id="epMinDown" aria-label="Minute earlier">▼</button>
+      </div>
+      <div class="ep-ampm" id="epAmPm">
+        <button data-ap="am">AM</button>
+        <button data-ap="pm">PM</button>
+      </div>
+    </div>
+    <div class="ep-hint" id="epHint"></div>
+    <div class="chips ep-quick" id="epQuick"></div>
+    <div class="ep-go">
+      <button id="epSet" class="ep-btn">Set, start later</button>
+      <button id="epStart" class="go ep-btn">Start ▶</button>
+    </div>
+  </main>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section class="view face" id="v-settings" hidden>
+  <header>
+    <button class="hbtn back" data-go="main">‹ Back</button>
+    <div class="title">Settings</div>
+    <div class="status pill off">Connecting…</div>
+  </header>
+  <main class="settings">
+    <div class="card qrcard">
+      <h2>Scan to control</h2>
+      <div id="qrs" class="qrs"></div>
+      <div id="links" class="hint"></div>
+    </div>
+
+    <div class="card">
+      <h2>Timer mode</h2>
+      <div class="seg" id="modeSeg">
+        <button data-mode="down">Countdown</button>
+        <button data-mode="up">Count up</button>
+        <button data-mode="clock">Time of day</button>
+      </div>
+      <h2>Clock</h2>
+      <div class="seg" id="clockSeg">
+        <button data-c24="0">12-hour <small>3:45 PM</small></button>
+        <button data-c24="1">24-hour <small>15:45</small></button>
+      </div>
+      <h2>At zero</h2>
+      <div class="seg" id="overSeg">
+        <button data-over="continue">Keep counting in red (+)</button>
+        <button data-over="stop">Stop at 0:00</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Warning colours</h2>
+      <div class="steppers">
+        <div class="stepper"><span class="lbl" data-color-of="colorNormal">Running</span></div>
+        <div class="swatches" data-color="colorNormal"></div>
+        <div class="stepper"><span class="lbl" data-color-of="colorWarn">Amber at</span><button data-step="warnAt" data-by="-30000">−</button><b id="warnAtVal">2:00</b><button data-step="warnAt" data-by="30000">+</button></div>
+        <div class="swatches" data-color="colorWarn"></div>
+        <div class="stepper"><span class="lbl" data-color-of="colorDanger">Red at</span><button data-step="dangerAt" data-by="-15000">−</button><b id="dangerAtVal">0:30</b><button data-step="dangerAt" data-by="15000">+</button></div>
+        <div class="swatches" data-color="colorDanger"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>On screen</h2>
+      <button class="field" id="labelField"><span class="lbl">Title above the timer</span><span class="val" id="labelVal">None</span></button>
+      <div class="switches">
+        <button class="switch" data-toggle="blackout">Blackout</button>
+        <button class="switch" data-toggle="showClock">Time of day</button>
+        <button class="switch" data-toggle="showProgress">Progress bar</button>
+        <button class="switch" data-toggle="flashOvertime">Flash overtime</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Preset times</h2>
+      <div class="chips editable" id="presetEdit"></div>
+    </div>
+
+    <div class="card">
+      <h2>Quick messages</h2>
+      <div class="chips editable" id="quickEdit"></div>
+    </div>
+
+    <div class="card">
+      <h2>Displays <button id="identifyAll" class="small">Identify all</button></h2>
+      <ul id="displays" class="list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Updates</h2>
+      <p class="hint" id="updVersion"></p>
+      <p class="upd-msg" id="updMsg"></p>
+      <p class="hint upd-notes" id="updNotes" hidden></p>
+      <div class="upd-btns">
+        <button id="updCheck" class="big">Check for updates</button>
+        <button id="updInstall" class="go big" hidden>Install update</button>
+      </div>
+      <p class="hint">Needs internet on the controller. Display Pis then copy the update from the controller by themselves.</p>
+    </div>
+
+  </main>
+</section>
+
+<div id="pinGate" class="gate" hidden>
+  <form id="pinForm" class="card">
+    <h2>Enter PIN</h2>
+    <input id="pinInput" type="password" inputmode="numeric" autocomplete="off">
+    <div class="pinpad" id="pinPad"></div>
+    <p id="pinErr" class="hint"></p>
+    <button class="go big" type="submit">Unlock</button>
+  </form>
+</div>
+
+<script src="/assets/timer-core.js"></script>
+<script src="/assets/link.js"></script>
+<script src="/assets/render.js"></script>
+<script src="/assets/sevenseg.js"></script>
+<script src="/assets/qr.js"></script>
+<script src="/assets/keyboard.js"></script>
+<script src="/assets/control.js"></script>
+</body>
+</html>

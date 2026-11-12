@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BEAMtimer Display</title>
+<link rel="icon" type="image/png" href="/assets/icon.png">
+<link rel="apple-touch-icon" href="/assets/icon.png">
+<link rel="stylesheet" href="/assets/screen.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { cursor: none; }
+  #screen { position: fixed; inset: 0; }
+</style>
+</head>
+<body>
+<div id="screen"></div>
+<script src="/assets/timer-core.js"></script>
+<script src="/assets/link.js"></script>
+<script src="/assets/render.js"></script>
+<script>
+(async () => {
+  const params = new URLSearchParams(location.search);
+  let name = params.get('name');
+  if (!name) {
+    try {
+      const info = await (await fetch('/api/info', { cache: 'no-store' })).json();
+      name = info.role === 'display' ? info.name : 'Browser display';
+    } catch { name = 'Display'; }
+  }
+
+  const v = BeamRender.build(document.getElementById('screen'));
+  let identify = null;
+  let online = false;
+  const link = new BeamLink({
+    role: 'display', name,
+    onStatus: s => { online = s === 'online'; },
+    onMessage: m => { if (m.t === 'identify') identify = { name: m.name, end: Date.now() + Math.min(10000, Math.max(0, m.until - link.now())) }; },
+  });
+  link.connect();
+
+  function frame() {
+    const extra = { online, identify: identify && Date.now() < identify.end ? identify.name : '' };
+    if (!link.state) extra.waitingText = online ? 'Connected' : 'Waiting for controller…';
+    BeamRender.draw(v, link.state, link.now(), extra);
+  }
+  setInterval(frame, 50);
+  window.addEventListener('resize', frame);
+
+  // On a laptop: double-click or F for full screen, and keep the screen awake.
+  const full = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {});
+  document.addEventListener('dblclick', full);
+  document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') full(); });
+  document.addEventListener('mousemove', () => {
+    document.body.style.cursor = '';
+    clearTimeout(window.hideCursor);
+    window.hideCursor = setTimeout(() => { document.body.style.cursor = 'none'; }, 2000);
+  });
+  const wake = () => navigator.wakeLock && navigator.wakeLock.request('screen').catch(() => {});
+  wake();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) wake(); });
+})();
+</script>
+</body>
+</html>
