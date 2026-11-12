@@ -29,7 +29,8 @@
       label: '',
       message: null,           // { text, flash, id }
       endBy: null,             // controller time (ms) the countdown should end at, or null
-      presets: [5, 10, 15, 20, 30, 45, 60, 90].map(m => m * 60000),
+      presets: [2, 3, 5, 10, 15, 20, 25, 30, 45, 60, 90, 120].map(m => m * 60000),   // 6 rows of 2 on the panel
+      presetsV: 2,
       quickMessages: ['Please wrap up', 'Overtime', 'Last question', '5 minutes left', 'Q&A now', 'Speak up', 'Slow down', 'Thank you'],
       tzOffsetMin: 0,          // controller's time zone, so every display shows the same clock
       rev: 0,
@@ -182,6 +183,13 @@
   function restore(saved) {
     const s = { ...defaultState(), ...(saved && typeof saved === 'object' ? saved : {}) };
     if (!['down', 'up', 'clock'].includes(s.mode)) s.mode = 'down';
+    // 1.3.4 went from 8 to 12 presets: top up older saved lists once (keeping the user's own first).
+    if (saved && saved.presetsV !== 2 && Array.isArray(s.presets) && s.presets.length < 12) {
+      const OLD = [5, 10, 15, 20, 30, 45, 60, 90].map(m => m * 60000);
+      if (s.presets.join() === OLD.join()) s.presets = defaultState().presets;   // untouched: the new list, in order
+      else s.presets = s.presets.concat(defaultState().presets.filter(ms => !s.presets.includes(ms))).slice(0, 12);
+    }
+    s.presetsV = 2;
     return s;
   }
 
