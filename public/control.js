@@ -608,15 +608,14 @@
   onPress($('updInstall'), () => confirmTap($('updInstall'), 'Sure? It restarts', () => updSend('install')));
   showUpdate();
 
-  // Scan to control: a QR code per network (Ethernet / Wi-Fi), using the IP so every phone can open it.
+  // Scan to control / Scan to display: a QR code per network (Ethernet / Wi-Fi), using the IP so every phone can open it.
   fetch('/api/info').then(r => r.json()).then(info => {
     const port = info.port === 80 ? '' : ':' + info.port;
     const host = `${info.hostname.replace(/\.(local|localdomain)$/, '')}.local`;
     const kind = n => (/^(wl|wlan|wifi)/i.test(n) ? 'Wi-Fi' : /^(eth|end)/i.test(n) ? 'Ethernet' : n);
     const targets = info.ips.length ? info.ips.slice(0, 3).map(i => ({ label: kind(i.ifname), host: i.address })) : [{ label: 'Network', host }];
-    $('qrs').innerHTML = '';
-    for (const t of targets) {
-      const url = `http://${t.host}${port}/control`;
+    const codes = (el, page) => { el.innerHTML = ''; for (const t of targets) {
+      const url = `http://${t.host}${port}/${page}`;
       const box = document.createElement('figure');
       box.className = 'qr';
       box.innerHTML = window.BeamQR.svg(url);
@@ -625,10 +624,15 @@
       cap.querySelector('b').textContent = t.label;
       cap.querySelector('code').textContent = url.replace('http://', '');
       box.appendChild(cap);
-      $('qrs').appendChild(box);
-    }
+      el.appendChild(box);
+    } };
+    codes($('qrs'), 'control');
+    codes($('qrsDisplay'), 'display');
     $('links').innerHTML = 'Point a phone camera at the code (the phone must be on the same network). Or type ' +
-      `<code>http://${host}${port}/control</code>.<br>A laptop or TV browser can be a display too: <code>http://${targets[0].host}${port}/display</code>`;
+      `<code>http://${host}${port}/control</code>.`;
+    $('linksDisplay').innerHTML = 'Turns a phone, tablet, laptop or smart TV browser into a presenter display (same network). ' +
+      'Tap the clock for full screen; the screen stays on while it is open. Or type ' +
+      `<code>http://${host}${port}/display</code>.`;
   }).catch(() => {});
 
   // ---------- PIN ----------

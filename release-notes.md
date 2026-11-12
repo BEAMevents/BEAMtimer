@@ -1,3 +1,7 @@
+# BEAMtime 1.3.1
+
+- Settings → Scan to display: a QR code that turns a phone, tablet or laptop into a presenter display.
+
 # BEAMtime 1.3.0
 
 - New name: BEAMtimer is now BEAMtime.

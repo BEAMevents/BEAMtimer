@@ -20,6 +20,7 @@ Stage timer for Raspberry Pi 5. One Pi is the **controller**; any number of **di
 - **NDI output** (optional, `--ndi`): any Pi can also send the clock as an NDI video source for vMix, OBS, TriCaster or a switcher, with a transparent background for keying if you want. See [NDI output](#ndi-output).
 - **Time of day** in Settings: the controller Pi's clock, set by **internet time** or **by hand** (a time picker, or "use this device's time" from a phone). Display Pis show the controller's time. A running timer isn't affected when the clock is changed.
 - **Network** in Settings: the controller's Ethernet address, **automatic (DHCP)** or a **fixed IP**.
+- **Scan to display** in Settings: a QR code that opens the presenter clock on a phone, tablet or laptop (tap for full screen).
 - **Check for updates** in Settings: the controller downloads the newest version and installs it; display Pis then update themselves from the controller. See [Updates](#updates).
 - Display Pis find the controller by themselves (Bonjour/mDNS); no IP addresses to type.
 
