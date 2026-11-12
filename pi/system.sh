@@ -76,8 +76,9 @@ case "$ACTION" in
     exit 0 ;;
   reboot)
     # Asked by this Pi's controller (Settings → Displays → Restart). A few seconds' delay so the answer gets out.
+    # Scheduled (not run in the background): anything left running when this service ends is stopped.
     systemd-run --on-active=3 --unit="beamtimer-restart-$(date +%s)" /bin/systemctl reboot >/dev/null 2>&1 \
-      || (sleep 3; systemctl reboot) >/dev/null 2>&1 &
+      || result 0 "Could not restart."
     result 1 "Restarting. Back in about a minute." ;;
   *) result 0 "Unknown request." ;;
 esac

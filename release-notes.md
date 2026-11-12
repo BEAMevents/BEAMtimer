@@ -1,3 +1,8 @@
+# BEAMtime 1.3.11
+
+- Fixes Pis sometimes not restarting after an update or a Restart from Settings (the restart was cancelled when the update finished).
+- Cleaner update files (no Mac file attributes).
+
 # BEAMtime 1.3.10
 
 - Settings → Displays → Scan: a Restart button for each display Pi (only its own controller can restart it).

@@ -14,7 +14,7 @@ mkdir -p "$DIR/dist"
 OUT="$DIR/dist/$NAME"
 
 # Same files push.sh copies to a Pi.
-COPYFILE_DISABLE=1 tar -C "$DIR" --exclude '.DS_Store' --exclude '__pycache__' -czf "$OUT" server public pi package.json README.md
+COPYFILE_DISABLE=1 tar --no-xattrs -C "$DIR" --exclude '.DS_Store' --exclude '__pycache__' -czf "$OUT" server public pi package.json README.md
 (cd "$DIR/dist" && shasum -a 256 "$NAME" > "$NAME.sha256")
 echo "Made dist/$NAME ($(du -h "$OUT" | cut -f1 | tr -d ' ')), sha256 $(cut -c1-16 "$OUT.sha256")…"
 

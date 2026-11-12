@@ -12,7 +12,7 @@ DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ARGS=$(printf '%q ' "$@")
 
 echo "Copying BEAMtime to ${HOST}…"
-COPYFILE_DISABLE=1 tar -C "$DIR" -czf - server public pi package.json README.md |
+COPYFILE_DISABLE=1 tar --no-xattrs -C "$DIR" -czf - server public pi package.json README.md |
   ssh "$HOST" 'rm -rf /tmp/beamtimer-src && mkdir -p /tmp/beamtimer-src && tar -xzf - -C /tmp/beamtimer-src --warning=no-unknown-keyword'
 
 echo "Installing…"
