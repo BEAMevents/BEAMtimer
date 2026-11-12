@@ -144,6 +144,8 @@ header .title { font-size: 20px; font-weight: 600; margin-right: auto; white-spa
   50% { border-color: #5a4300; background: #040404; box-shadow: none; }
 }
 .msgstrip button { flex: 0 0 auto; min-height: 36px; }
+.msgstrip { cursor: pointer; }
+.plate { cursor: pointer; user-select: none; -webkit-user-select: none; }
 
 .opts { display: flex; flex-direction: column; gap: 14px; }
 .opt { display: flex; align-items: center; gap: 12px; }

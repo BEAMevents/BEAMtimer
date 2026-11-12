@@ -1,3 +1,8 @@
+# BEAMtime 1.3.6
+
+- Tap the On screen bar on the control panel to open the message page.
+- A little surprise when you tap the BEAMtime name plate.
+
 # BEAMtime 1.3.5
 
 - Control panel LED digits: the unlit "ghost" segments are darker, and only lit segments glow.

@@ -201,6 +201,38 @@
   onPress($('openMsg'), () => openMessage());
   onPress($('openEnd'), () => openEndBy());
   onPress($('clearStage'), () => cmd('clearMessage'));
+  // Tapping the On screen bar opens the message page (its Remove button still just removes).
+  $('onStage').addEventListener('click', e => { if (!e.target.closest('#clearStage')) openMessage(); });
+
+  // Easter egg: tap the BEAMtime plate and every button flies off the screen, then back.
+  let flying = false;
+  $('v-main').querySelector('.plate').addEventListener('click', () => {
+    if (flying || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    flying = true;
+    const els = [...$('v-main').querySelectorAll('.rbtn, .hbtn, .lamp, .ledwin, .flabel, .dot-led, .msgstrip, .pill')];
+    const cx = innerWidth / 2, cy = innerHeight / 2, far = Math.max(innerWidth, innerHeight) * 1.4;
+    let last = 0;
+    els.forEach((el, i) => {
+      const r = el.getBoundingClientRect();
+      let dx = r.left + r.width / 2 - cx, dy = r.top + r.height / 2 - cy;
+      const len = Math.hypot(dx, dy) || 1;
+      const ang = (Math.random() - 0.5) * 0.9;   // a little scatter
+      [dx, dy] = [dx * Math.cos(ang) - dy * Math.sin(ang), dx * Math.sin(ang) + dy * Math.cos(ang)];
+      const spin = (Math.random() < 0.5 ? -1 : 1) * (360 + Math.random() * 540);
+      const off = `translate(${dx / len * far}px, ${dy / len * far}px) rotate(${spin}deg) scale(.6)`;
+      const delay = Math.random() * 250;
+      last = Math.max(last, delay);
+      el.animate([
+        { transform: 'none', offset: 0 },
+        { transform: off, offset: 0.4, easing: 'ease-in' },
+        { transform: off, offset: 0.55, easing: 'cubic-bezier(.2,1.4,.4,1)' },
+        { transform: 'none', offset: 1 },
+      ], { duration: 2000, delay, easing: 'linear' });
+    });
+    const plate = $('v-main').querySelector('.plate');
+    plate.animate([{ transform: 'none' }, { transform: 'rotate(360deg) scale(1.15)' }, { transform: 'none' }], { duration: 1200, easing: 'ease-in-out' });
+    setTimeout(() => { flying = false; }, 2000 + last);
+  });
   // Clear, like the hardware: stop and set the time to 0:00, then build a new time with the arrows.
   $('clearBtn').addEventListener('click', () => {
     if (midShow()) confirmTap($('clearBtn'), 'Sure?', () => cmd('set', { ms: 0 }));
