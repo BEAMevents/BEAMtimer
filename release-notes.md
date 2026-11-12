@@ -1,3 +1,7 @@
+# BEAMtimer 1.2.1
+
+- Repeat, Start and Stop buttons use drawn icons, so they no longer show as boxes on the Pi.
+
 # BEAMtimer 1.2.0
 
 - Settings → Time of day: the Pi's clock, set by internet time or by hand (time picker, or "use this device's time").

@@ -326,3 +326,5 @@ button.big { min-height: 60px; font-size: 20px; }
 .sysclock b { font-size: 34px; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
 .sysclock span { color: var(--muted); }
 .netnow { margin: 0; font-size: 17px; }
+.rbtn .ico { width: 30px; height: 30px; fill: currentColor; display: block; }
+.rbtn.start .ico { width: 44px; height: 44px; }

@@ -193,6 +193,11 @@
   onPress($('startBtn'), () => cmd('toggle'));
   // Repeat: one tap puts the timer back to the full Total time.
   onPress($('resetBtn'), () => cmd('reset'));
+  // Drawn icons: the Pi's fonts have no media symbols (they showed as boxes).
+  const ICONS = {
+    play: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.6v14.8a.9.9 0 0 0 1.4.8l11.3-7.4a.9.9 0 0 0 0-1.6L8.4 3.8A.9.9 0 0 0 7 4.6z"/></svg>',
+    pause: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="4" width="4.5" height="16" rx="1"/><rect x="14" y="4" width="4.5" height="16" rx="1"/></svg>',
+  };
   onPress($('openMsg'), () => openMessage());
   onPress($('openEnd'), () => openEndBy());
   onPress($('clearStage'), () => cmd('clearMessage'));
@@ -223,8 +228,11 @@
     $('lampR').classList.toggle('on', v.phase === 'danger' || v.phase === 'over');
     $('lampR').classList.toggle('blink', blink);
     $('ledMain').classList.toggle('blink', blink);
-    const icon = s.running ? '❚❚' : '▶';
-    if ($('startBtn').textContent !== icon) $('startBtn').textContent = icon;
+    const icon = s.running ? 'pause' : 'play';
+    if ($('startBtn').dataset.icon !== icon) {
+      $('startBtn').dataset.icon = icon;
+      $('startBtn').innerHTML = ICONS[icon];
+    }
     $('startBtn').classList.toggle('running', s.running);
   }
   setInterval(tick, 100);
