@@ -1,3 +1,7 @@
+# BEAMtime 1.3.13
+
+- Display safe mode now starts when Chromium crashes within 45 s of starting (its start-up crash takes about 15 s).
+
 # BEAMtime 1.3.12
 
 - Display screens come back when Chromium crashes at start ("Zygote process exited prematurely"): after 3 quick crashes the Pi starts it without the sandbox (safe for our own local page).

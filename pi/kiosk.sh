@@ -23,7 +23,7 @@ for _ in $(seq 60); do
   sleep 1
 done
 
-QUICK=0      # browser crashes in a row, each within a few seconds of starting
+QUICK=0      # browser crashes in a row, each within 45 s of starting
 SAFE=0       # after 3: start without the sandbox and zygote helper (fine for our own local page)
 SAFE_FLAGS=()
 while true; do
@@ -60,7 +60,8 @@ while true; do
   done
   wait "$PID" 2>/dev/null
   CODE=$?
-  if [ $(( $(date +%s) - START )) -lt 15 ]; then QUICK=$((QUICK + 1)); else QUICK=0; fi
+  # A crash at start takes about 15 s (Chromium waits for its helper first); a working page runs much longer.
+  if [ $(( $(date +%s) - START )) -lt 45 ]; then QUICK=$((QUICK + 1)); else QUICK=0; fi
   echo "== browser exited with code $CODE at $(date) (quick crashes in a row: $QUICK, safe mode: $SAFE)" >> "$LOG"
   cp -f "$LOG" "$LOG.last" 2>/dev/null
   sleep 2
