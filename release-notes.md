@@ -1,3 +1,10 @@
+# BEAMtimer 1.2.0
+
+- Settings → Time of day: the Pi's clock, set by internet time or by hand (time picker, or "use this device's time").
+- Settings → Network: Ethernet address automatic (DHCP) or fixed IP.
+- A running timer keeps counting correctly when the clock is changed or corrected.
+- IP number pad on the on-screen keyboard.
+
 # BEAMtimer 1.1.0
 
 - The Pi's touchscreen shows the control panel full screen (it was small in a corner).

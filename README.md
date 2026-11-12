@@ -18,6 +18,8 @@ Stage timer for Raspberry Pi 5. One Pi is the **controller**; any number of **di
 - Displays keep counting if the network drops (tiny orange dot in the corner while disconnected), and pick up any change when it comes back. They also remember the last state, so a display that reboots mid-show carries on.
 - The controller saves the timer, so it carries on after a restart too.
 - **NDI output** (optional, `--ndi`): any Pi can also send the clock as an NDI video source for vMix, OBS, TriCaster or a switcher, with a transparent background for keying if you want. See [NDI output](#ndi-output).
+- **Time of day** in Settings: the controller Pi's clock, set by **internet time** or **by hand** (a time picker, or "use this device's time" from a phone). Display Pis show the controller's time. A running timer isn't affected when the clock is changed.
+- **Network** in Settings: the controller's Ethernet address, **automatic (DHCP)** or a **fixed IP**.
 - **Check for updates** in Settings: the controller downloads the newest version and installs it; display Pis then update themselves from the controller. See [Updates](#updates).
 - Display Pis find the controller by themselves (Bonjour/mDNS); no IP addresses to type.
 
@@ -161,7 +163,8 @@ python3 server/ndi-sender.py --server http://localhost:8080 --png ndi-test.png
 - **Service logs:** `journalctl -u beamtimer -f`
 - **NDI source doesn't show up:** `systemctl status beamtimer-ndi`. The receiving computer must be on the same network/VLAN (NDI finds sources with mDNS, like the displays do). If the venue blocks mDNS, add the Pi's IP in the receiver (NDI Access Manager → Remote Sources, or vMix's NDI IP list).
 - **Screen black / no browser:** check the screen is on HDMI0. Over SSH: `cat /etc/beamtimer/kiosk` (should exist); on Lite, the kiosk starts from `~/.bash_profile` on tty1; on Desktop, from `~/.config/labwc/autostart`.
-- **Wrong time of day:** the clock follows the controller's time and time zone (set them in BEAMpi → System). Countdowns don't depend on the clock being right.
+- **Wrong time of day:** the clock follows the controller's time and time zone. Fix it in Settings → Time of day (internet time, or set by hand). The Pi 5 keeps time while unplugged only with a clock battery (RTC battery, the small connector next to USB-C); without one, a Pi with no internet starts with roughly the time it was switched off. Countdowns don't depend on the clock being right. Time zone: BEAMpi → System.
+- **Changed the network and lost the page:** with DHCP the router picks the address. Use `http://beamtimer-control.local/control`, or read the address on the Pi's own screen (Settings → Network).
 - **Portrait screen:** on Pi OS Desktop, rotate it in Screen Configuration. Rotation on Lite isn't built in yet.
 
 ## Try it on the Mac without Pis
@@ -195,6 +198,7 @@ ELECTRON_RUN_AS_NODE=1 ../BEAMpi/node_modules/electron/dist/Electron.app/Content
 | `public/link.js` | browser connection: find controller, reconnect, clock offset, cache |
 | `public/render.js`, `screen.css` | draws the timer (display page and control preview) |
 | `public/control.*`, `display.html` | the two pages (control has main, message and settings screens) |
+| `server/system.js`, `pi/system.sh` | Settings → Time of day and Network (server side) and the root helper that changes them |
 | `server/update.js`, `pi/update.sh` | Check for updates (server side) and the root installer it hands over to |
 | `scripts/release.sh` | makes (and publishes) an update for Check for updates |
 | `public/fit.js` | zooms the control page to fit the window |

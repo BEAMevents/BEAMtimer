@@ -38,6 +38,7 @@
       }
       if (m.t === 'clients') { displays = m.list.filter(c => c.role === 'display'); showDisplays(); }
       if (m.t === 'update') showUpdate(m.status);
+      if (m.t === 'system') showSystem(m);
     },
   });
   link.connect();
@@ -91,9 +92,28 @@
     return at;
   }
   let pick = 0; // minutes past midnight
+  let pickMode = 'endby';   // or 'clock': the same picker sets the Pi's clock (Settings → Time of day)
+  function pickerFor(mode) {
+    pickMode = mode;
+    const clock = mode === 'clock';
+    $('v-endby').querySelector('.title').textContent = clock ? 'Set the clock' : 'End by';
+    $('v-endby').querySelector('.back').dataset.go = clock ? 'settings' : 'main';
+    $('epSet').hidden = clock;
+    $('epQuick').hidden = clock;
+    $('epStart').textContent = clock ? 'Set clock' : 'Start ▶';
+  }
+  function openSetClock() {
+    const s = link.state;
+    if (!s) return;
+    pickerFor('clock');
+    pick = minOfDay(s, link.now());
+    show('endby');
+    drawEndBy();
+  }
   function openEndBy() {
     const s = link.state;
     if (!s) return;
+    pickerFor('endby');
     if (s.endBy && s.mode === 'down' && s.endBy > link.now()) pick = minOfDay(s, s.endBy);
     else {
       // suggest "now + the current time", rounded up to the next 5 minutes
@@ -122,7 +142,12 @@
     $$('#epAmPm button').forEach(b => b.classList.toggle('on', b.dataset.ap === x.ap.toLowerCase()));
     const left = nextAt(s, pick) - link.now();
     const now = hm(s, minOfDay(s, link.now()));
-    $('epHint').innerHTML = `Now ${now.h}:${now.m}${now.ap ? ' ' + now.ap : ''} &nbsp;·&nbsp; the timer will run for <b>${Core.fmt(Math.ceil(left / 1000))}</b>`;
+    const nowText = `${now.h}:${now.m}${now.ap ? ' ' + now.ap : ''}`;
+    if (pickMode === 'clock') {
+      $('epHint').innerHTML = `The clock says <b>${nowText}</b> &nbsp;·&nbsp; Set clock makes it <b>${x.h.trim()}:${x.m}${x.ap ? ' ' + x.ap : ''}</b> (seconds from :00)`;
+      return;
+    }
+    $('epHint').innerHTML = `Now ${nowText} &nbsp;·&nbsp; the timer will run for <b>${Core.fmt(Math.ceil(left / 1000))}</b>`;
     // Quick picks: the next four quarter hours
     const base = Math.floor(minOfDay(s, link.now()) / 15) * 15;
     const key = `${base}|${s.clock24}`;
@@ -143,7 +168,15 @@
   setInterval(drawEndBy, 1000);
   const endBy = start => { const s = link.state; if (s && cmd('endBy', { at: nextAt(s, pick), start })) show('main'); };
   onPress($('epSet'), () => endBy(false));
-  onPress($('epStart'), () => endBy(true));
+  onPress($('epStart'), () => {
+    if (pickMode !== 'clock') return endBy(true);
+    // Today at the picked time, in the Pi's time zone.
+    const s = link.state;
+    const local = link.now() + tzOff(s);
+    const at = local - (((local % DAY) + DAY) % DAY) + pick * 60000 - tzOff(s);
+    sysChange({ action: 'time', at }, 'sysMsg');
+    show('settings');
+  });
 
   // ---------- main: the timer panel ----------
   const Seg = window.SevenSeg;
@@ -327,7 +360,7 @@
     kbInput.classList.remove('bad');
     kbDone = onDone;
     show('kb');
-    kb.reset(numeric ? 'num' : 'abc');
+    kb.reset(numeric === 'ip' ? 'ip' : numeric ? 'num' : 'abc');
     kbInput.focus();
     kbInput.setSelectionRange(value.length, value.length);
   }
@@ -475,6 +508,67 @@
   }
   showDisplays();
   onPress($('identifyAll'), () => cmd('identify', { id: 'all' }));
+
+  // ---------- time of day and network (of the controller Pi) ----------
+  let sys = null, sysAt = 0, sysMsgTarget = 'sysMsg';
+  const sysSend = m => link.send({ t: 'system', ...m }) || cmd('noop');
+  function sysChange(m, target) {
+    sysMsgTarget = target;
+    $(target).textContent = 'Working…';
+    $(target).className = 'upd-msg';
+    sysSend(m);
+  }
+  function showSystem(m) {
+    if (m.status) { sys = m.status; sysAt = Date.now(); }
+    if (m.result) {
+      const el = $(sysMsgTarget);
+      el.textContent = m.result.message;
+      el.className = 'upd-msg ' + (m.result.ok ? 'good' : 'bad');
+    }
+    if (!sys) return;
+    const can = sys.canChange;
+    $$('#ntpSeg button').forEach(b => { b.classList.toggle('active', sys.ntp != null && (b.dataset.ntp === '1') === sys.ntp); b.disabled = !can; });
+    $('manualTime').hidden = !can || sys.ntp !== false;
+    $('ntpHint').textContent = !can || sys.ntp == null ? 'Changing the clock works on the Pi.'
+      : sys.ntp ? (sys.synced ? `Set by internet time · ${sys.timezone}` : `Waiting for internet time (the Pi needs internet) · ${sys.timezone}`)
+        : `Set by hand · ${sys.timezone}. A Pi without a clock battery loses the time when unplugged: check it after power-up, or use internet time.`;
+    const n = sys.net;
+    $('netNow').textContent = !n ? 'Network settings work on the Pi.'
+      : `Ethernet: ${n.address ? n.address.replace(/\/\d+$/, '') : 'not connected'} · ${n.mode === 'dhcp' ? 'automatic (DHCP)' : n.mode === 'static' ? 'fixed' : n.mode}`;
+    $$('#netSeg button').forEach(b => { b.classList.toggle('active', !!n && b.dataset.net === n.mode); b.disabled = !can || !n; });
+  }
+  // The Pi's clock, ticking (controller clock, controller time zone).
+  setInterval(() => {
+    const s = link.state;
+    if (!s || $('v-settings').hidden) return;
+    const d = new Date(link.now() + tzOff(s));
+    const x = hm(s, d.getUTCHours() * 60 + d.getUTCMinutes());
+    $('sysTime').textContent = `${x.h}:${x.m}:${String(d.getUTCSeconds()).padStart(2, '0')}${x.ap ? ' ' + x.ap : ''}`;
+    $('sysDate').textContent = d.toLocaleDateString(undefined, { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    if (Date.now() - sysAt > 10000) { sysAt = Date.now(); sysSend({ action: 'status' }); }
+  }, 500);
+  $$('#ntpSeg button').forEach(b => onPress(b, () => sysChange({ action: 'ntp', on: b.dataset.ntp === '1' }, 'sysMsg')));
+  onPress($('setClock'), openSetClock);
+  onPress($('useDeviceTime'), () => sysChange({ action: 'time', at: Date.now() }, 'sysMsg'));
+  const dhcpBtn = $('netSeg').querySelector('[data-net=dhcp]');
+  onPress(dhcpBtn, () => confirmTap(dhcpBtn, 'Sure? Address may change', () => sysChange({ action: 'net', mode: 'dhcp' }, 'netMsg')));
+  onPress($('netSeg').querySelector('[data-net=static]'), () => {
+    const n = (sys && sys.net) || {};
+    const ipOk = v => /^(\d{1,3}\.){3}\d{1,3}$/.test(v) && v.split('.').every(o => Number(o) <= 255);
+    openKeyboard({
+      title: 'Fixed IP address (Ethernet)', value: (n.address || '').replace(/\/\d+$/, ''), numeric: 'ip', done: 'Next', placeholder: 'e.g. 192.168.1.50',
+      onDone: addr => {
+        if (!ipOk(addr.trim())) return false;
+        setTimeout(() => openKeyboard({
+          title: `Gateway (router) for ${addr.trim()}`, value: n.gateway || addr.trim().replace(/\.\d+$/, '.1'), numeric: 'ip', done: 'Set IP', placeholder: 'e.g. 192.168.1.1',
+          onDone: gw => {
+            if (gw.trim() && !ipOk(gw.trim())) return false;
+            sysChange({ action: 'net', mode: 'static', address: addr.trim(), prefix: 24, gateway: gw.trim() }, 'netMsg');
+          },
+        }), 0);
+      },
+    });
+  });
 
   // ---------- updates ----------
   let upd = { phase: 'idle' };

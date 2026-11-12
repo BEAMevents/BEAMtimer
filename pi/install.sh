@@ -190,8 +190,28 @@ Description=Install a BEAMtimer update
 Type=oneshot
 ExecStart=/bin/bash $APP/pi/update.sh
 EOF
+# Settings → Time of day / Network (server/system.js) asks this root service to change the clock or IP.
+cat > /etc/systemd/system/beamtimer-system.path <<EOF
+[Unit]
+Description=BEAMtimer clock / network request
+
+[Path]
+PathExists=/var/lib/beamtimer/system-request
+
+[Install]
+WantedBy=multi-user.target
+EOF
+cat > /etc/systemd/system/beamtimer-system.service <<EOF
+[Unit]
+Description=Change the clock or network for BEAMtimer
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash $APP/pi/system.sh
+EOF
 systemctl daemon-reload
 systemctl enable --now beamtimer-update.path >/dev/null 2>&1 || true
+systemctl enable --now beamtimer-system.path >/dev/null 2>&1 || true
 
 # ---------- NDI output ----------
 if [ "$NDI" = 1 ]; then

@@ -79,6 +79,7 @@
         let m;
         try { m = JSON.parse(ev.data); } catch { return; }
         if (m.t === 'pong') return this.pong(m);
+        if (m.t === 'clockJump') { this.samples = []; this.offsetFrom(m.s, Date.now(), Date.now()); this.ping(); }
         if (m.t === 'welcome') { this.offsetFrom(m.s, Date.now(), Date.now()); this.setStatus('online', m.controller); }
         if (m.t === 'state') {
           this.state = m.state;

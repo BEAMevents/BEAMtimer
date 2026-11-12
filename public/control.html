@@ -218,6 +218,31 @@
     </div>
 
     <div class="card">
+      <h2>Time of day</h2>
+      <div class="sysclock"><b id="sysTime">--:--:--</b><span id="sysDate"></span></div>
+      <div class="seg" id="ntpSeg">
+        <button data-ntp="1">Internet time</button>
+        <button data-ntp="0">Set by hand</button>
+      </div>
+      <p class="hint" id="ntpHint"></p>
+      <div class="upd-btns" id="manualTime" hidden>
+        <button id="setClock" class="big">Set the time…</button>
+        <button id="useDeviceTime" class="big">Use this device's time</button>
+      </div>
+      <p class="upd-msg" id="sysMsg"></p>
+    </div>
+
+    <div class="card">
+      <h2>Network</h2>
+      <p class="netnow" id="netNow"></p>
+      <div class="seg" id="netSeg">
+        <button data-net="dhcp">Automatic (DHCP)</button>
+        <button data-net="static">Fixed IP…</button>
+      </div>
+      <p class="upd-msg" id="netMsg"></p>
+    </div>
+
+    <div class="card">
       <h2>Updates</h2>
       <p class="hint" id="updVersion"></p>
       <p class="upd-msg" id="updMsg"></p>

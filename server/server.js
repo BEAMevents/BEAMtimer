@@ -13,6 +13,7 @@ const dns = require('dns');
 const { execFile } = require('child_process');
 const ws = require('./ws');
 const { Updater } = require('./update');
+const { System } = require('./system');
 const Core = require('../public/timer-core');
 
 const VERSION = require('../package.json').version;
@@ -113,6 +114,16 @@ function onConn(conn, req) {
       sendClients();
       return;
     }
+    if (m.t === 'system') {   // time of day / network of this Pi
+      if (info.role !== 'control' || !info.authed) return conn.send({ t: 'auth', ok: false });
+      (async () => {
+        if (m.action === 'status') return conn.send({ t: 'system', status: await system.status() });
+        const result = await system.change(m);
+        const status = await system.status();
+        broadcast({ t: 'system', status, result }, i => i.role === 'control' && i.authed);
+      })().catch(e => conn.send({ t: 'system', result: { ok: false, message: e.message } }));
+      return;
+    }
     if (m.t === 'update') {
       if (info.role !== 'control' || !info.authed) return conn.send({ t: 'auth', ok: false });
       if (m.action === 'check') updater.check();
@@ -171,6 +182,31 @@ async function findController() {
   }
   found = { url, at: url ? Date.now() : 0 };
   return url;
+}
+
+// ---------- clock changes ----------
+// If this computer's clock is changed (set by hand, or corrected by internet time), a running
+// timer must not jump: move its start by the same amount. "End by" keeps its time of day.
+const system = new System({ dataDir: cfg.dataDir });
+if (cfg.role === 'controller') {
+  let wall = Date.now(), mono = performance.now();
+  setInterval(() => {
+    const w = Date.now(), m = performance.now();
+    const jump = Math.round((w - wall) - (m - mono));
+    wall = w; mono = m;
+    if (Math.abs(jump) < 1500) return;
+    console.log(`Clock changed by ${Math.round(jump / 1000)} s; keeping the timer where it was.`);
+    const s = { ...state };
+    if (s.running && s.startedAt != null) {
+      s.startedAt += jump;
+      if (s.endBy && s.mode === 'down') s.duration = Math.max(0, Math.min(Core.MAX_MS, s.elapsedBefore + s.endBy - s.startedAt));
+    }
+    s.rev = (s.rev || 0) + 1;
+    state = s;
+    saveSoon();
+    broadcast({ t: 'clockJump', by: jump, s: w }, i => i.role);
+    sendState();
+  }, 1000);
 }
 
 // ---------- updates ----------

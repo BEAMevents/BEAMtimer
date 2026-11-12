@@ -264,6 +264,40 @@ const run = (s, cmds) => cmds.reduce((st, [c, now]) => Core.apply(st, c, now), s
     assert.strictEqual(saved.running, true);
   });
 
+  await test('clock jump (set by hand / internet time) does not move a running timer', async () => {
+    // A controller whose clock jumps 1 hour ahead 2.5 s after starting.
+    const pre = path.join(data, 'jump.js');
+    fs.writeFileSync(pre, 'setTimeout(() => { const real = Date.now; Date.now = () => real() + 3600000; }, 2500);');
+    const JP = CP + 5;
+    const p = spawn(process.execPath, ['--require', pre, server, '--role', 'controller', '--port', String(JP), '--data', path.join(data, 'j')], { env: process.env, stdio: ['ignore', 'pipe', 'inherit'] });
+    procs.push(p);
+    await new Promise(res => p.stdout.once('data', res));
+    const c = await wsClient(JP);
+    c.send({ t: 'hello', role: 'control', name: 'T' });
+    await c.wait(m => m.t === 'auth');
+    c.send({ t: 'cmd', cmd: 'set', ms: 600000, start: true });
+    const before = (await c.wait(m => m.t === 'state' && m.state.running)).state;
+    c.clear();
+    const jump = await c.wait(m => m.t === 'clockJump', 5000);
+    assert.ok(Math.abs(jump.by - 3600000) < 3000, 'jump of about an hour seen: ' + jump.by);
+    const after = (await c.wait(m => m.t === 'state' && m.state.startedAt !== before.startedAt)).state;
+    const leftSec = Math.round((after.duration - (jump.s - after.startedAt)) / 1000);
+    assert.ok(leftSec >= 595 && leftSec <= 598, 'still about 9:57 left, not an hour less: ' + leftSec);
+    c.close();
+  });
+
+  await test('clock / network settings: status, and refused off a Pi', async () => {
+    const c = await wsClient(CP);
+    c.send({ t: 'hello', role: 'control', name: 'T', pin: '4321' });
+    await c.wait(m => m.t === 'auth');
+    c.send({ t: 'system', action: 'status' });
+    const st = (await c.wait(m => m.t === 'system' && m.status)).status;
+    assert.ok(Math.abs(st.time - Date.now()) < 5000);
+    c.send({ t: 'system', action: 'net', mode: 'static', address: '999.1.1.1' });
+    assert.strictEqual((await c.wait(m => m.t === 'system' && m.result)).result.ok, false);
+    c.close();
+  });
+
   for (const p of procs) p.kill();
   fs.rmSync(data, { recursive: true, force: true });
   console.log(`\n${passed} passed${process.exitCode ? ', some FAILED' : ''}`);

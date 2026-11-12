@@ -19,6 +19,8 @@
     ],
   };
   LAYERS.num = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], [':', '0', '⌫']];
+  LAYERS.ip = [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['.', '0', '⌫']];   // IP addresses
+  const PAD = { num: true, ip: true };
   const WIDE = { '⇧': 'w15', '⌫': 'w15', '#+=': 'w2', 'ABC': 'w2', 'space': 'w6' };
 
   // Repeat while held (arrows, backspace): once now, then faster and faster.
@@ -76,7 +78,7 @@
 
     function draw() {
       root.innerHTML = '';
-      root.classList.toggle('numpad', layer === 'num');
+      root.classList.toggle('numpad', !!PAD[layer]);
       const upper = shift || caps;
       for (const row of LAYERS[layer]) {
         const r = document.createElement('div');
@@ -84,7 +86,7 @@
         for (const k of row) {
           const b = document.createElement('button');
           b.type = 'button';
-          b.className = 'key ' + ((layer !== 'num' && WIDE[k]) || '') + (k.length > 1 && k !== 'space' ? ' fn' : '');
+          b.className = 'key ' + ((!PAD[layer] && WIDE[k]) || '') + (k.length > 1 && k !== 'space' ? ' fn' : '');
           b.textContent = k === 'space' ? 'space' : (upper && k.length === 1 ? k.toUpperCase() : k);
           if (k === '⇧') { b.classList.toggle('on', shift || caps); b.classList.toggle('caps', caps); b.setAttribute('aria-label', 'Shift'); }
           if (k === '⌫') { b.setAttribute('aria-label', 'Delete'); holdRepeat(b, backspace); }
@@ -109,12 +111,12 @@
       if (k === 'space') insert(' ');
       else insert((shift || caps) && k.length === 1 ? k.toUpperCase() : k);
       const wasShift = shift;
-      shift = layer !== 'num' && !caps && autoShift();
+      shift = !PAD[layer] && !caps && autoShift();
       if (wasShift !== shift) draw();
     }
 
-    function reset(which) { layer = which || 'abc'; caps = false; shift = layer !== 'num' && autoShift(); draw(); }
-    input.addEventListener('input', () => { if (!caps && layer !== 'num') { const s = autoShift(); if (s !== shift) { shift = s; draw(); } } });
+    function reset(which) { layer = which || 'abc'; caps = false; shift = !PAD[layer] && autoShift(); draw(); }
+    input.addEventListener('input', () => { if (!caps && !PAD[layer]) { const s = autoShift(); if (s !== shift) { shift = s; draw(); } } });
     reset();
     return { reset };
   }
