@@ -151,6 +151,8 @@ function onConn(conn, req) {
   });
 }
 
+const kiosk = { beatAt: 0, onlineAt: 0 };
+
 // ---------- finding the controller (display only) ----------
 let found = { url: null, at: 0 };
 
@@ -276,6 +278,23 @@ const server = http.createServer(async (req, res) => {
   }
   // Current timer, read-only (used by the NDI sender). s = controller clock, for the offset.
   if (p === '/api/state' && cfg.role === 'controller') return sendJSON(res, { state: publicState(), s: Date.now() });
+  // Watchdog for the Pi's own full-screen browser (pi/kiosk.sh): the page beats every 10 s.
+  if (p === '/api/kiosk/beat') {
+    const local = /^(127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '');
+    if (local) { kiosk.beatAt = Date.now(); if (url.searchParams.get('online') === '1') kiosk.onlineAt = Date.now(); }
+    return sendJSON(res, { ok: local });
+  }
+  if (p === '/api/kiosk/check') {
+    const now = Date.now();
+    const quiet = now - kiosk.beatAt > 60000;   // page not running (stuck, crashed, never loaded)
+    let reachable = cfg.role === 'controller';
+    if (!reachable) {
+      const u = await findController();
+      if (u) reachable = await fetch(u + '/api/info', { signal: AbortSignal.timeout(2000) }).then(r => r.ok, () => false);
+    }
+    const stuck = reachable && now - kiosk.onlineAt > 90000;   // page running but not linked, though the controller answers
+    return sendJSON(res, { restart: quiet || stuck, quiet, stuck, reachable });
+  }
   if (p === '/api/controller') {
     if (cfg.role === 'controller') return sendJSON(res, { url: null, self: true });
     const u = await findController();

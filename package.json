@@ -1,7 +1,7 @@
 {
   "name": "beamtimer",
   "productName": "BEAMtime",
-  "version": "1.3.7",
+  "version": "1.3.8",
   "description": "BEAMtime — stage timer for Raspberry Pi 5: one Pi (or any browser) controls, any number of Pis show the clock full screen on HDMI",
   "author": "BEAM Events",
   "license": "UNLICENSED",

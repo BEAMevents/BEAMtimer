@@ -24,7 +24,8 @@
       flashOvertime: true,
       showClock: true,
       showProgress: true,
-      clock24: true,
+      clock24: false,          // 12-hour clock by default (since 1.3.8)
+      clockV: 2,
       blackout: false,
       label: '',
       message: null,           // { text, flash, id }
@@ -190,6 +191,9 @@
       else s.presets = s.presets.concat(defaultState().presets.filter(ms => !s.presets.includes(ms))).slice(0, 12);
     }
     s.presetsV = 2;
+    // 1.3.8 made the 12-hour clock the default: switch older saved setups over once.
+    if (saved && saved.clockV !== 2) s.clock24 = false;
+    s.clockV = 2;
     return s;
   }
 

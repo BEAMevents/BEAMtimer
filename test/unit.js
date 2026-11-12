@@ -117,8 +117,10 @@ const run = (s, cmds) => cmds.reduce((st, [c, now]) => Core.apply(st, c, now), s
   await test('clock mode uses the controller time zone', () => {
     const s = { ...Core.apply(Core.defaultState(), { cmd: 'mode', mode: 'clock' }, T0), tzOffsetMin: 60 };
     const noonUTC = Date.UTC(2026, 0, 1, 12, 0, 5);
-    assert.strictEqual(Core.view(s, noonUTC).text, '13:00:05');
-    assert.strictEqual(Core.view({ ...s, clock24: false }, noonUTC).text, '1:00:05 PM');
+    assert.strictEqual(Core.view(s, noonUTC).text, '1:00:05 PM');   // 12-hour by default
+    assert.strictEqual(Core.view({ ...s, clock24: true }, noonUTC).text, '13:00:05');
+    assert.strictEqual(Core.restore({ clock24: true }).clock24, false);              // older setups switch once
+    assert.strictEqual(Core.restore({ clock24: true, clockV: 2 }).clock24, true);    // a later choice of 24-hour stays
   });
 
   await test('parseTime', () => {

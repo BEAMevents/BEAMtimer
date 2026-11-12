@@ -1,3 +1,10 @@
+# BEAMtime 1.3.8
+
+- Display Pi screens reconnect by themselves: if the page stops responding, or stays disconnected while the controller is reachable, the browser restarts (checked every 15 s).
+- Fixes the black screen on display Pis after 1.3.7 (the hidden mouse pointer change is undone).
+- 12-hour clock by default (setups that used 24-hour switch once; pick 24-hour again in Settings → Clock if you want it).
+- Tapping ✕ Remove on the On screen bar no longer opens the message page.
+
 # BEAMtime 1.3.7
 
 - Settings → Displays → Scan for new displays: finds every BEAMtime display Pi on the network and shows whether it's connected.

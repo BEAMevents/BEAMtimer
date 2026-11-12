@@ -31,6 +31,19 @@ while true; do
     --overscroll-history-navigation=0 --disable-pinch --check-for-update-interval=31536000 \
     --password-store=basic --user-data-dir="$PROFILE" \
     --ozone-platform=wayland --enable-features=OverlayScrollbar \
-    >/dev/null 2>&1
+    >/dev/null 2>&1 &
+  PID=$!
+  START=$(date +%s)
+  # Watchdog: if the page stops reporting in, or stays disconnected while the controller answers,
+  # restart the browser (the page then reconnects from scratch). First check after 90 s.
+  while kill -0 "$PID" 2>/dev/null; do
+    sleep 15
+    [ $(( $(date +%s) - START )) -lt 90 ] && continue
+    if curl -fs -m 8 "http://localhost:$PORT/api/kiosk/check" 2>/dev/null | grep -q '"restart":true'; then
+      echo "BEAMtime kiosk: page not connected, restarting the browser" | systemd-cat -t beamtime-kiosk 2>/dev/null || true
+      kill "$PID" 2>/dev/null; sleep 5; kill -9 "$PID" 2>/dev/null
+    fi
+  done
+  wait "$PID" 2>/dev/null
   sleep 2
 done

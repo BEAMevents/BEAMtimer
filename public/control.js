@@ -201,9 +201,14 @@
   };
   onPress($('openMsg'), () => openMessage());
   onPress($('openEnd'), () => openEndBy());
-  onPress($('clearStage'), () => cmd('clearMessage'));
-  // Tapping the On screen bar opens the message page (its Remove button still just removes).
-  $('onStage').addEventListener('click', e => { if (!e.target.closest('#clearStage')) openMessage(); });
+  let removedAt = 0;
+  onPress($('clearStage'), () => { removedAt = Date.now(); cmd('clearMessage'); });
+  // Tapping the On screen bar opens the message page. Not after Remove: that button hides as soon
+  // as it is pressed, so the end of the same tap lands on the bar.
+  $('onStage').addEventListener('click', e => {
+    if (e.target.closest('#clearStage') || Date.now() - removedAt < 1000) return;
+    openMessage();
+  });
 
   // Easter egg: tap the BEAMtime plate and every button flies off the screen, then back.
   let flying = false;
@@ -653,6 +658,10 @@
       },
     });
   });
+
+  // Tell this Pi's server the page is alive and linked (pi/kiosk.sh restarts the browser if not).
+  const kioskBeat = () => fetch(`/api/kiosk/beat?online=${link.status === 'online' ? 1 : 0}`, { cache: 'no-store' }).catch(() => {});
+  kioskBeat(); setInterval(kioskBeat, 10000);
 
   // ---------- updates ----------
   let upd = { phase: 'idle' };

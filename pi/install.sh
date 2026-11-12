@@ -323,22 +323,11 @@ if [ $KIOSK = 1 ]; then
     touch "$PROFILE"
     sed -i '/# BEAMtimer start/,/# BEAMtimer end/d' "$PROFILE"
     grep -q '\.bashrc' "$PROFILE" || echo '[ -f ~/.bashrc ] && . ~/.bashrc' >> "$PROFILE"
-    # Display Pis: an invisible mouse pointer (otherwise cage shows an arrow in the middle of the
-    # screen until the mouse moves). The controller keeps a normal pointer for mouse users.
-    CURSOR_ENV=""
-    if [ "$ROLE" = display ]; then
-      BLANK=/usr/share/icons/beamtime-blank/cursors
-      mkdir -p "$BLANK"
-      # A 1x1 fully transparent Xcursor file (68 bytes), under the names the compositor and Chromium ask for.
-      printf 'Xcur\x10\x00\x00\x00\x00\x00\x01\x00\x01\x00\x00\x00\x02\x00\xfd\xff\x18\x00\x00\x00\x1c\x00\x00\x00\x24\x00\x00\x00\x02\x00\xfd\xff\x18\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' > "$BLANK/default"
-      for n in left_ptr arrow pointer hand1 hand2 text xterm watch wait progress crosshair grab grabbing move not-allowed; do ln -sf default "$BLANK/$n"; done
-      printf '[Icon Theme]\nName=beamtime-blank\n' > /usr/share/icons/beamtime-blank/index.theme
-      CURSOR_ENV="XCURSOR_THEME=beamtime-blank XCURSOR_SIZE=24 "
-    fi
+    rm -rf /usr/share/icons/beamtime-blank   # 1.3.7 tried an invisible pointer theme; removed again
     cat >> "$PROFILE" <<EOF
 # BEAMtimer start: full-screen timer on the HDMI screen (not over SSH)
 if [ -z "\${WAYLAND_DISPLAY:-}" ] && [ "\$(tty)" = /dev/tty1 ] && [ -f /etc/beamtimer/kiosk ]; then
-  ${CURSOR_ENV}exec cage -s -- $APP/pi/kiosk.sh
+  exec cage -s -- $APP/pi/kiosk.sh
 fi
 # BEAMtimer end
 EOF

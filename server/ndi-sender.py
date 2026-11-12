@@ -49,7 +49,7 @@ def elapsed(s, now):
 def clock_text(s, now):
     d = datetime.datetime.fromtimestamp((now + (s.get('tzOffsetMin') or 0) * 60000) / 1000, datetime.timezone.utc)
     tail = '%s:%s' % (pad(d.minute), pad(d.second))
-    if s.get('clock24', True):
+    if s.get('clock24', False):
         return '%s:%s' % (pad(d.hour), tail)
     h = d.hour % 12 or 12
     return '%d:%s %s' % (h, tail, 'PM' if d.hour >= 12 else 'AM')

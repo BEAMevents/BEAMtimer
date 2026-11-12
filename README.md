@@ -22,6 +22,7 @@ Stage timer for Raspberry Pi 5. One Pi is the **controller**; any number of **di
 - **Network** in Settings: the controller's Ethernet address, **automatic (DHCP)** or a **fixed IP**.
 - **Scan for new displays** in Settings → Displays: the controller checks every address on its network for BEAMtime display Pis and shows which are connected (works without mDNS).
 - **Scan to display** in Settings: a QR code that opens the presenter clock on a phone, tablet or laptop (tap for full screen).
+- **Reconnects by itself**: each Pi's full-screen page reports to its own Pi every 10 s; if it stops, or stays disconnected while the controller answers, the browser restarts (`journalctl -t beamtime-kiosk`).
 - **Check for updates** in Settings: the controller downloads the newest version and installs it; display Pis then update themselves from the controller. See [Updates](#updates).
 - Display Pis find the controller by themselves (Bonjour/mDNS); no IP addresses to type.
 

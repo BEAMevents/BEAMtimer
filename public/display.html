@@ -34,10 +34,13 @@
   let online = false;
   const link = new BeamLink({
     role: 'display', name,
-    onStatus: s => { online = s === 'online'; },
+    onStatus: s => { const was = online; online = s === 'online'; if (online !== was && window.kioskBeat) window.kioskBeat(); },
     onMessage: m => { if (m.t === 'identify') identify = { name: m.name, end: Date.now() + Math.min(10000, Math.max(0, m.until - link.now())) }; },
   });
   link.connect();
+  // Tell this Pi's server the page is alive and linked (pi/kiosk.sh restarts the browser if not).
+  const beat = window.kioskBeat = () => fetch(`/api/kiosk/beat?online=${online ? 1 : 0}`, { cache: 'no-store' }).catch(() => {});
+  beat(); setInterval(beat, 10000);
 
   function frame() {
     const extra = { online, identify: identify && Date.now() < identify.end ? identify.name : '' };
