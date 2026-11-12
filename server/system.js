@@ -42,6 +42,7 @@ class System {
   // Check a request from the page; returns { error } or the cleaned request.
   clean(m) {
     if (m.action === 'ntp') return { action: 'ntp', on: m.on === true };
+    if (m.action === 'reboot') return { action: 'reboot' };
     if (m.action === 'time') {
       const at = Math.round(Number(m.at));
       if (!(at > Date.UTC(2024, 0, 1)) || at > Date.UTC(2100, 0, 1)) return { error: 'That time is not valid.' };

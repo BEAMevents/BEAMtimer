@@ -40,6 +40,10 @@
       if (m.t === 'update') showUpdate(m.status);
       if (m.t === 'system') showSystem(m);
       if (m.t === 'scan') showScan(m);
+      if (m.t === 'restartDisplay') {
+        $('scanMsg').className = 'upd-msg ' + (m.ok ? 'good' : 'bad');
+        $('scanMsg').textContent = `${m.ip}: ${m.message}`;
+      }
     },
   });
   link.connect();
@@ -591,9 +595,18 @@
       span.append(d.name);
       const info = document.createElement('small');
       info.textContent = `${d.ip}${d.version ? ` · v${d.version}` : ''} · ` + (ok ? 'connected'
-        : d.controller ? `using another controller (${d.controller.replace(/^http:\/\//, '')})`
-          : d.controller === null ? 'not connected: looking for the controller' : 'not connected here');
-      li.append(span, info);
+        : d.usesThis ? 'set to this controller, but its screen is not connected (screen not running?)'
+          : d.controller ? `using another controller (${d.controller.replace(/^http:\/\//, '')})`
+            : d.controller === null ? 'not connected: looking for the controller' : 'not connected here');
+      const rb = document.createElement('button');
+      rb.className = 'small';
+      rb.textContent = 'Restart';
+      onPress(rb, () => confirmTap(rb, 'Sure?', () => {
+        link.send({ t: 'restartDisplay', ip: d.ip });
+        $('scanMsg').className = 'upd-msg';
+        $('scanMsg').textContent = `Restarting ${d.name}…`;
+      }));
+      li.append(span, info, rb);
       ul.appendChild(li);
     }
   }

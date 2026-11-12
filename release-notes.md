@@ -1,3 +1,9 @@
+# BEAMtime 1.3.10
+
+- Settings → Displays → Scan: a Restart button for each display Pi (only its own controller can restart it).
+- Scan no longer says "using another controller" for a display that uses this one but whose screen isn't connected.
+- Each Pi has a diagnostics page at /api/diag (update log, browser messages, uptime) for troubleshooting without SSH.
+
 # BEAMtime 1.3.9
 
 - Fixes display Pi screens staying black after an automatic restart (Chromium's leftover "already running" lock is cleared).

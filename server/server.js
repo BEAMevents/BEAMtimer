@@ -128,6 +128,15 @@ function onConn(conn, req) {
       })().catch(e => conn.send({ t: 'system', result: { ok: false, message: e.message } }));
       return;
     }
+    if (m.t === 'restartDisplay') {   // Settings → Displays → Restart (a display Pi found by the scan)
+      if (info.role !== 'control' || !info.authed || cfg.role !== 'controller') return conn.send({ t: 'auth', ok: false });
+      const ip = String(m.ip || '');
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return;
+      fetch(`http://${ip}/api/restart`, { method: 'POST', signal: AbortSignal.timeout(20000) })
+        .then(r => r.json()).catch(() => ({ ok: false, message: 'The display did not answer.' }))
+        .then(r => conn.send({ t: 'restartDisplay', ip, ok: !!r.ok, message: r.message || '' }));
+      return;
+    }
     if (m.t === 'scan') {   // Settings → Displays → Scan for new displays
       if (info.role !== 'control' || !info.authed || cfg.role !== 'controller') return conn.send({ t: 'auth', ok: false });
       scanDisplays().then(found => conn.send({ t: 'scan', found }), () => conn.send({ t: 'scan', found: [], error: 'Scan failed' }));
@@ -216,7 +225,11 @@ function scanDisplays() {
     try {
       const r = await fetch(`http://${ip}/api/info`, { signal: AbortSignal.timeout(1500) });
       const j = await r.json();
-      if (j && j.app === 'BEAMtimer' && j.role === 'display') found.push({ ip, name: j.name || j.hostname || ip, version: j.version || '', controller: 'controller' in j ? j.controller : undefined });   // undefined: older version, doesn't say
+      if (j && j.app === 'BEAMtimer' && j.role === 'display') {
+        const controller = 'controller' in j ? j.controller : undefined;   // undefined: older version, doesn't say
+        const host = controller ? controller.replace(/^\w+:\/\//, '').split(/[:/]/)[0] : '';
+        found.push({ ip, name: j.name || j.hostname || ip, version: j.version || '', controller, usesThis: !!host && (self.has(host) || host === os.hostname() + '.local') });
+      }
     } catch { /* nothing there */ }
   };
   scanning = (async () => {
@@ -302,6 +315,36 @@ const server = http.createServer(async (req, res) => {
     }
     const stuck = reachable && now - kiosk.onlineAt > 90000;   // page running but not linked, though the controller answers
     return sendJSON(res, { restart: quiet || stuck, quiet, stuck, reachable });
+  }
+  // What's going on with this Pi, readable from the controller or a laptop (no password needed).
+  if (p === '/api/diag') {
+    const tail = (f, n = 40) => { try { return fs.readFileSync(f, 'utf8').split('\n').slice(-n).join('\n'); } catch { return null; } };
+    const home = os.homedir();
+    let updateStatus = null;
+    try { updateStatus = JSON.parse(fs.readFileSync(path.join(cfg.dataDir, 'update-status.json'), 'utf8')); } catch { /* none */ }
+    return sendJSON(res, {
+      version: VERSION, role: cfg.role, name: NAME, uptimeSec: Math.round(os.uptime()),
+      screen: { lastReportSecAgo: kiosk.beatAt ? Math.round((Date.now() - kiosk.beatAt) / 1000) : null, lastConnectedSecAgo: kiosk.onlineAt ? Math.round((Date.now() - kiosk.onlineAt) / 1000) : null },
+      controller: cfg.role === 'display' ? (found.url || null) : undefined,
+      updateStatus, updateLog: tail(path.join(cfg.dataDir, 'update.log')),
+      browserLog: tail(path.join(home, '.cache', 'beamtime-kiosk.log')), browserLogLast: tail(path.join(home, '.cache', 'beamtime-kiosk.log.last')),
+    });
+  }
+  // Restart this display Pi. Only its own controller may ask (Settings → Displays → Restart).
+  if (p === '/api/restart' && req.method === 'POST' && cfg.role === 'display') {
+    const from = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+    const u = await findController();
+    let allowed = false;
+    if (u) {
+      const host = u.replace(/^\w+:\/\//, '').split(/[:/]/)[0];
+      allowed = from === host;
+      if (!allowed) {
+        const info = await fetch(u + '/api/info', { signal: AbortSignal.timeout(2000) }).then(r => r.json(), () => null);
+        allowed = !!(info && (info.ips || []).some(i => i.address === from));
+      }
+    }
+    if (!allowed) return sendJSON(res, { ok: false, message: 'Only this display\'s controller can restart it.' }, 403);
+    return sendJSON(res, await system.change({ action: 'reboot' }));
   }
   if (p === '/api/controller') {
     if (cfg.role === 'controller') return sendJSON(res, { url: null, self: true });

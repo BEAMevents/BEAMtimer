@@ -13,7 +13,8 @@ URL="http://localhost:$PORT/$PAGE"
 
 BROWSER=$(command -v chromium || command -v chromium-browser)
 PROFILE="$HOME/.config/beamtimer-chromium"
-mkdir -p "$PROFILE"
+mkdir -p "$PROFILE" "$HOME/.cache"
+LOG="$HOME/.cache/beamtime-kiosk.log"   # the browser's own messages, shown in /api/diag
 
 # Wait for the local server (up to 60 s) so the page doesn't open on an error.
 for _ in $(seq 60); do
@@ -34,7 +35,7 @@ while true; do
     --overscroll-history-navigation=0 --disable-pinch --check-for-update-interval=31536000 \
     --password-store=basic --user-data-dir="$PROFILE" \
     --ozone-platform=wayland --enable-features=OverlayScrollbar \
-    >/dev/null 2>&1 &
+    >"$LOG" 2>&1 &
   PID=$!
   START=$(date +%s)
   # Watchdog: if the page stops reporting in, or stays disconnected while the controller answers,
@@ -48,5 +49,7 @@ while true; do
     fi
   done
   wait "$PID" 2>/dev/null
+  echo "== browser exited with code $? at $(date)" >> "$LOG"
+  cp -f "$LOG" "$LOG.last" 2>/dev/null
   sleep 2
 done

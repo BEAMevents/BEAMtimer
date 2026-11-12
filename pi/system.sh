@@ -6,6 +6,7 @@
 #   {"id":"…","action":"time","at":1794450000000}             set the clock (ms since 1970, UTC); turns internet time off
 #   {"id":"…","action":"net","mode":"dhcp"}                    Ethernet address from the router
 #   {"id":"…","action":"net","mode":"static","address":"192.168.1.50","prefix":24,"gateway":"192.168.1.1"}
+#   {"id":"…","action":"reboot"}                               restart this Pi
 # Every value is checked here before use. The result goes to system-status.json.
 set -uo pipefail
 DIR=/var/lib/beamtimer
@@ -19,7 +20,7 @@ eval "$(node -e '
   let r = {}; try { r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); } catch {}
   const ok = (v, re) => (re.test(String(v)) ? String(v) : "");
   const out = {
-    ID: ok(r.id, /^[A-Za-z0-9-]{1,40}$/), ACTION: ok(r.action, /^(ntp|time|net)$/),
+    ID: ok(r.id, /^[A-Za-z0-9-]{1,40}$/), ACTION: ok(r.action, /^(ntp|time|net|reboot)$/),
     ON: r.on === true ? 1 : 0, AT: ok(r.at, /^\d{12,14}$/),
     MODE: ok(r.mode, /^(dhcp|static)$/), ADDR: ok(r.address, /^\d{1,3}(\.\d{1,3}){3}$/),
     PREFIX: ok(r.prefix, /^([89]|[12]\d|3[0-2])$/) || "24", GW: ok(r.gateway || "", /^(\d{1,3}(\.\d{1,3}){3})?$/),
@@ -73,5 +74,10 @@ case "$ACTION" in
     sleep 1
     nmcli connection up "$CON" >/dev/null 2>&1 || nmcli device reapply "$DEV" >/dev/null 2>&1
     exit 0 ;;
+  reboot)
+    # Asked by this Pi's controller (Settings → Displays → Restart). A few seconds' delay so the answer gets out.
+    systemd-run --on-active=3 --unit="beamtimer-restart-$(date +%s)" /bin/systemctl reboot >/dev/null 2>&1 \
+      || (sleep 3; systemctl reboot) >/dev/null 2>&1 &
+    result 1 "Restarting. Back in about a minute." ;;
   *) result 0 "Unknown request." ;;
 esac
