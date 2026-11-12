@@ -1,3 +1,7 @@
+# BEAMtime 1.3.5
+
+- Control panel LED digits: the unlit "ghost" segments are darker, and only lit segments glow.
+
 # BEAMtime 1.3.4
 
 - 12 presets (six rows) instead of 8: 2, 3, 5, 10, 15, 20, 25, 30, 45, 60, 90 and 120 min. Your own presets are kept; the new ones are added after them.
