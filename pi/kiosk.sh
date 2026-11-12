@@ -15,7 +15,6 @@ BROWSER=$(command -v chromium || command -v chromium-browser)
 PROFILE="$HOME/.config/beamtimer-chromium"
 mkdir -p "$PROFILE" "$HOME/.cache"
 LOG="$HOME/.cache/beamtime-kiosk.log"   # the browser's own messages, shown in /api/diag
-rm -f "$HOME/.cache/beamtime-kiosk-safe"
 
 # Wait for the local server (up to 60 s) so the page doesn't open on an error.
 for _ in $(seq 60); do
@@ -26,6 +25,8 @@ done
 QUICK=0      # browser crashes in a row, each within 45 s of starting
 SAFE=0       # after 3: start without the sandbox and zygote helper (fine for our own local page)
 SAFE_FLAGS=()
+# Needed it before on this Pi? Start that way straight away (delete this file to try normal mode again).
+if [ -f "$HOME/.cache/beamtime-kiosk-safe" ]; then SAFE=1; SAFE_FLAGS=(--no-sandbox --no-zygote --test-type); fi
 while true; do
   if [ "$SAFE" = 0 ] && [ "$QUICK" -ge 3 ]; then
     SAFE=1

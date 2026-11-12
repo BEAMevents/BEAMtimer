@@ -163,6 +163,8 @@ python3 server/ndi-sender.py --server http://localhost:8080 --png ndi-test.png
 
 ### Troubleshooting
 
+- **Display shows only a black screen (and maybe a pointer):** the browser isn't starting. Open `http://DISPLAY-IP/api/diag` from any browser for its messages. If Chromium crashes at start ("Zygote process exited prematurely"), BEAMtime switches that Pi to a safe mode after 3 crashes and remembers it (delete `~/.cache/beamtime-kiosk-safe` to try normal mode again). Settings → Displays → Scan → **Restart** restarts a display Pi from the controller.
+
 - **Display says "Waiting for controller…"**: check both are on the same network/VLAN. On the display Pi: `avahi-browse -rt _beamtimer._tcp` should list the controller. If the network blocks mDNS, reinstall the display with `--controller <controller IP>` (give the controller a fixed IP).
 - **Service logs:** `journalctl -u beamtimer -f`
 - **NDI source doesn't show up:** `systemctl status beamtimer-ndi`. The receiving computer must be on the same network/VLAN (NDI finds sources with mDNS, like the displays do). If the venue blocks mDNS, add the Pi's IP in the receiver (NDI Access Manager → Remote Sources, or vMix's NDI IP list).

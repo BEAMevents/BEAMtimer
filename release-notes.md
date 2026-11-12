@@ -1,3 +1,8 @@
+# BEAMtime 1.3.14
+
+- Display Pis: no mouse pointer in the middle of the screen (an invisible pointer; the controller keeps its normal one).
+- A display that needed the browser safe mode starts in it straight away after a restart (no minute of black screen).
+
 # BEAMtime 1.3.13
 
 - Display safe mode now starts when Chromium crashes within 45 s of starting (its start-up crash takes about 15 s).
