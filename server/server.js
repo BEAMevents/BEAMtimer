@@ -124,6 +124,11 @@ function onConn(conn, req) {
       })().catch(e => conn.send({ t: 'system', result: { ok: false, message: e.message } }));
       return;
     }
+    if (m.t === 'scan') {   // Settings → Displays → Scan for new displays
+      if (info.role !== 'control' || !info.authed || cfg.role !== 'controller') return conn.send({ t: 'auth', ok: false });
+      scanDisplays().then(found => conn.send({ t: 'scan', found }), () => conn.send({ t: 'scan', found: [], error: 'Scan failed' }));
+      return;
+    }
     if (m.t === 'update') {
       if (info.role !== 'control' || !info.authed) return conn.send({ t: 'auth', ok: false });
       if (m.action === 'check') updater.check();
@@ -184,6 +189,34 @@ async function findController() {
   return url;
 }
 
+// ---------- scanning for displays (controller only) ----------
+// Asks every address on this controller's local networks (its /24) for /api/info on port 80.
+// Works without mDNS. Returns the BEAMtime displays found, with the controller each one uses.
+let scanning = null;
+function scanDisplays() {
+  if (scanning) return scanning;
+  const self = new Set(localIPs().map(i => i.address));
+  const targets = [];
+  for (const { address } of localIPs()) {
+    const base = address.split('.').slice(0, 3).join('.');
+    for (let n = 1; n < 255; n++) { const ip = `${base}.${n}`; if (!self.has(ip) && !targets.includes(ip)) targets.push(ip); }
+  }
+  const found = [];
+  const probe = async ip => {
+    try {
+      const r = await fetch(`http://${ip}/api/info`, { signal: AbortSignal.timeout(1500) });
+      const j = await r.json();
+      if (j && j.app === 'BEAMtimer' && j.role === 'display') found.push({ ip, name: j.name || j.hostname || ip, version: j.version || '', controller: 'controller' in j ? j.controller : undefined });   // undefined: older version, doesn't say
+    } catch { /* nothing there */ }
+  };
+  scanning = (async () => {
+    const queue = targets.slice();
+    await Promise.all(Array.from({ length: 64 }, async () => { while (queue.length) await probe(queue.shift()); }));
+    return found.sort((a, b) => a.ip.split('.').map(Number).reduce((x, y) => x * 256 + y) - b.ip.split('.').map(Number).reduce((x, y) => x * 256 + y));
+  })().finally(() => { scanning = null; });
+  return scanning;
+}
+
 // ---------- clock changes ----------
 // If this computer's clock is changed (set by hand, or corrected by internet time), a running
 // timer must not jump: move its start by the same amount. "End by" keeps its time of day.
@@ -238,7 +271,8 @@ const server = http.createServer(async (req, res) => {
   if (p === '/') { res.writeHead(302, { Location: cfg.role === 'controller' ? '/control' : '/display' }); return res.end(); }
   if (p === '/control' || p === '/display') return sendFile(res, path.join(PUBLIC, p.slice(1) + '.html'));
   if (p === '/api/info') {
-    return sendJSON(res, { app: 'BEAMtimer', version: VERSION, role: cfg.role, name: NAME, hostname: os.hostname(), port: cfg.port, ips: localIPs(), clients: cfg.role === 'controller' ? clientList().length : undefined });
+    return sendJSON(res, { app: 'BEAMtimer', version: VERSION, role: cfg.role, name: NAME, hostname: os.hostname(), port: cfg.port, ips: localIPs(), clients: cfg.role === 'controller' ? clientList().length : undefined,
+      controller: cfg.role === 'display' ? (found.url || null) : undefined });
   }
   // Current timer, read-only (used by the NDI sender). s = controller clock, for the offset.
   if (p === '/api/state' && cfg.role === 'controller') return sendJSON(res, { state: publicState(), s: Date.now() });

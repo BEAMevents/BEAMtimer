@@ -39,6 +39,7 @@
       if (m.t === 'clients') { displays = m.list.filter(c => c.role === 'display'); showDisplays(); }
       if (m.t === 'update') showUpdate(m.status);
       if (m.t === 'system') showSystem(m);
+      if (m.t === 'scan') showScan(m);
     },
   });
   link.connect();
@@ -548,6 +549,49 @@
   }
   showDisplays();
   onPress($('identifyAll'), () => cmd('identify', { id: 'all' }));
+
+  // Scan for new displays: the controller asks every address on its network for a BEAMtime display.
+  let scanTimer = null;
+  onPress($('scanBtn'), () => {
+    if ($('scanBtn').disabled) return;
+    if (!link.send({ t: 'scan' })) return cmd('noop');   // offline: shake the status pill
+    $('scanBtn').disabled = true;
+    $('scanMsg').className = 'upd-msg';
+    $('scanMsg').textContent = 'Scanning the network… (about 10 seconds)';
+    clearTimeout(scanTimer);
+    scanTimer = setTimeout(() => showScan({ found: null }), 30000);
+  });
+  function showScan(m) {
+    clearTimeout(scanTimer);
+    $('scanBtn').disabled = false;
+    const ul = $('scanList');
+    ul.innerHTML = '';
+    if (!m.found) {
+      ul.hidden = true;
+      $('scanMsg').className = 'upd-msg bad';
+      $('scanMsg').textContent = m.error || 'The scan did not finish. Try again.';
+      return;
+    }
+    const here = new Set(displays.map(d => d.ip));
+    const fresh = m.found.filter(d => !here.has(d.ip)).length;
+    $('scanMsg').className = 'upd-msg' + (m.found.length ? ' good' : '');
+    $('scanMsg').textContent = !m.found.length ? 'No BEAMtime display Pis found on this network.'
+      : `Found ${m.found.length} display Pi${m.found.length === 1 ? '' : 's'}` + (fresh ? `, ${fresh} not connected here.` : ', all connected.');
+    ul.hidden = !m.found.length;
+    for (const d of m.found) {
+      const li = document.createElement('li');
+      const span = document.createElement('span');
+      const ok = here.has(d.ip);
+      span.innerHTML = `<i class="dot${ok ? '' : ' off'}"></i>`;
+      span.append(d.name);
+      const info = document.createElement('small');
+      info.textContent = `${d.ip}${d.version ? ` · v${d.version}` : ''} · ` + (ok ? 'connected'
+        : d.controller ? `using another controller (${d.controller.replace(/^http:\/\//, '')})`
+          : d.controller === null ? 'not connected: looking for the controller' : 'not connected here');
+      li.append(span, info);
+      ul.appendChild(li);
+    }
+  }
 
   // ---------- time of day and network (of the controller Pi) ----------
   let sys = null, sysAt = 0, sysMsgTarget = 'sysMsg';

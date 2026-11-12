@@ -1,3 +1,8 @@
+# BEAMtime 1.3.7
+
+- Settings → Displays → Scan for new displays: finds every BEAMtime display Pi on the network and shows whether it's connected.
+- Display Pis: no mouse pointer in the middle of the screen.
+
 # BEAMtime 1.3.6
 
 - Tap the On screen bar on the control panel to open the message page.

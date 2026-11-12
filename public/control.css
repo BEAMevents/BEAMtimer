@@ -342,3 +342,7 @@ button.big { min-height: 60px; font-size: 20px; }
 .netnow { margin: 0; font-size: 17px; }
 .rbtn .ico { width: 30px; height: 30px; fill: currentColor; display: block; }
 .rbtn.start .ico { width: 44px; height: 44px; }
+
+/* ---------- scan for displays ---------- */
+#scanBtn { margin-top: 4px; }
+#scanList .dot.off { background: #ff9500; box-shadow: none; }
