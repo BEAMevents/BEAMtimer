@@ -6,7 +6,7 @@ Stage timer for Raspberry Pi 5. One Pi is the **controller**; any number of **di
   - green / yellow / red lamps, a big red LED main display, and LED windows for **Total time** and **Sum-up** (when it turns yellow)
   - **Total time ▲/▼** change the set time by 1 minute (hold to go faster). Tap **Set seconds** and they step 10 seconds instead.
   - **Sum-up ▲/▼** move the yellow warning point by 30 seconds
-  - **Presets**: tap to load a preset time (red LED on the one that's loaded). **Press and hold** a preset for 1 second to save the current Total time into it. Tap the **Presets** title to put all presets back to the defaults (5, 10, 15, 20, 30, 45, 60, 90 min).
+  - **Presets**: tap to load a preset time (red LED on the one that's loaded). **Press and hold** a preset for 1 second to save the current Total time into it. Tap the **Presets** title to put all presets back to the 12 defaults (2, 3, 5, 10, 15, 20, 25, 30, 45, 60, 90, 120 min).
   - **Options**: **Blink** (flash in overtime), **Black** (blackout the displays), **Msg** (message to presenter; **✕ Remove** on the On-screen strip takes it off), **End by** (pick a time of day, like 14:30, and the countdown ends then. It still ends on time after a pause. The button shows the end time while it's set, and any manual time change cancels it). **Clear** stops and sets the time to 0:00, ready to build a new time with the arrows.
   - **Repeat** goes back to the full time, **Start (Stop)** starts and pauses
   - While the timer runs, Clear needs a second tap ("Sure?") so a stray finger can't wipe the time. Repeat is always one tap
